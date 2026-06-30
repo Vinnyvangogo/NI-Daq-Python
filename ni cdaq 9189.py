@@ -37,7 +37,7 @@ try:
     import nidaqmx
     from nidaqmx.constants import (
         ThermocoupleType, TemperatureUnits, AcquisitionType,
-        TerminalConfiguration, CJCSource
+        TerminalConfiguration, CJCSource, ReadRelativeTo
     )
     SIMULATION_MODE = False
 except ImportError:
@@ -82,10 +82,10 @@ class DAQManager:
     """Handles all NI-DAQmx (or simulated) hardware interaction.
 
     `chassis_name` is the NI-DAQmx chassis base name as it appears in
-    NI MAX for a network cDAQ-9189, e.g. "cDAQ9189-24D753A". Each module
+    NI MAX for a network cDAQ-9189, e.g. "cDAQ9189-24E8D67". Each module
     is its own NI-DAQmx device, named by appending "Mod<N>" directly to
     the chassis base name (no separator, no slash) -- for example
-    "cDAQ9189-24D753AMod1" for the thermocouple module in slot 1. Channels
+    "cDAQ9189-24E8D67Mod1" for the thermocouple module in slot 1. Channels
     are then addressed as "<module_device>/ai<n>". This mirrors the
     confirmed-working pattern used elsewhere in this deployment.
 
@@ -137,8 +137,30 @@ class DAQManager:
         # simulation phase accumulators (so demo data moves smoothly)
         self._sim_t = 0.0
 
+        # error-throttling state (see report_error)
+        self._last_error_time: dict = {}
+        self._error_repeat_count: dict = {}
+
     def report_error(self, source: str, message: str):
-        self.errors.put((datetime.now(), source, message))
+        # Throttle identical repeated errors -- during a sustained overflow
+        # storm the same error can fire every read tick (10-100+ times per
+        # second). Flooding the queue with duplicates doesn't add useful
+        # information and forces the UI thread to drain/render an
+        # ever-growing backlog, which can itself worsen the underlying lag.
+        # At most one copy of a given (source, message) pair is queued per
+        # half second; a running count is appended so nothing is silently
+        # lost, just coalesced.
+        key = (source, message)
+        now = time.monotonic()
+        last = self._last_error_time.get(key, 0.0)
+        count = self._error_repeat_count.get(key, 0) + 1
+        self._error_repeat_count[key] = count
+        if now - last < 0.5:
+            return
+        self._last_error_time[key] = now
+        suffix = f"  (x{count} since last shown)" if count > 1 else ""
+        self._error_repeat_count[key] = 0
+        self.errors.put((datetime.now(), source, message + suffix))
 
     def test_connection(self) -> tuple[bool, str]:
         """
@@ -183,7 +205,7 @@ class DAQManager:
                                 f"{missing}. Available devices: "
                                 f"{device_names or 'none'}. Confirm the chassis "
                                 f"base name (shown in NI MAX, e.g. "
-                                f"'cDAQ9189-24D753A') is correct -- module "
+                                f"'cDAQ9189-24E8D67') is correct -- module "
                                 f"device names are derived from it.")
             dev = nidaqmx.system.Device(self.dev_tc)
             # self_test_device() raises if the chassis fails its self-test
@@ -377,6 +399,21 @@ class DAQManager:
                         raw = [float(np.mean(ch_data)) for ch_data in data]
                     except Exception as e:
                         self.report_error("Modules 2-6 (9320)", str(e))
+                        # Once a read falls behind the live buffer (overflow,
+                        # Error -200279), NI-DAQmx's default read position
+                        # stays where it was -- every subsequent read hits
+                        # the same stale, already-overflowed position and
+                        # fails again forever. Recover by jumping the read
+                        # pointer to the most recent sample so the next
+                        # read starts fresh instead of retrying a position
+                        # that can never succeed.
+                        try:
+                            task.in_stream.relative_to = ReadRelativeTo.MOST_RECENT_SAMPLE
+                            task.in_stream.offset = 0
+                        except Exception as e2:
+                            self.report_error(
+                                "Modules 2-6 (9320)",
+                                f"Could not reset read position: {e2}")
                         time.sleep(0.2)
                         continue
 
@@ -467,6 +504,18 @@ class DAQManager:
                         raw = [float(np.mean(ch_data)) for ch_data in data]
                     except Exception as e:
                         self.report_error("Module 7 (9223)", str(e))
+                        # Same overflow-recovery as the 9320 loop: once a
+                        # read falls behind (Error -200279), the read
+                        # position is stuck behind the live buffer and
+                        # every retry fails the same way forever unless we
+                        # explicitly jump forward to the most recent sample.
+                        try:
+                            task.in_stream.relative_to = ReadRelativeTo.MOST_RECENT_SAMPLE
+                            task.in_stream.offset = 0
+                        except Exception as e2:
+                            self.report_error(
+                                "Module 7 (9223)",
+                                f"Could not reset read position: {e2}")
                         time.sleep(0.1)
                         continue
 
@@ -713,7 +762,7 @@ class DAQApp(tk.Tk):
 
         tk.Label(top, text="   Chassis:", font=FONT_SMALL,
                  bg=C_PANEL, fg=C_MUTED).pack(side="left")
-        self._device_var = tk.StringVar(value="cDAQ9189-24D753A")
+        self._device_var = tk.StringVar(value="cDAQ9189-XXXXXXX")
         dev_ent = tk.Entry(top, textvariable=self._device_var, width=18,
                            bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
                            relief="flat", font=FONT_MONO)
@@ -721,7 +770,7 @@ class DAQApp(tk.Tk):
 
         tk.Label(top, text="DAQ IP:", font=FONT_SMALL,
                  bg=C_PANEL, fg=C_MUTED).pack(side="left", padx=(8, 0))
-        self._ip_var = tk.StringVar(value="192.168.100.100")
+        self._ip_var = tk.StringVar(value="192.168.1.100")
         ip_ent = tk.Entry(top, textvariable=self._ip_var, width=15,
                           bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
                           relief="flat", font=FONT_MONO)
@@ -1170,7 +1219,7 @@ class DAQApp(tk.Tk):
             messagebox.showerror(
                 "Error",
                 "Enter the chassis base name as shown in NI MAX "
-                "(e.g. cDAQ9189-24D753A), without a module suffix.")
+                "(e.g. cDAQ9189-24E8D67), without a module suffix.")
             return
 
         self.daq = DAQManager(chassis_name, ip, self.error_queue)
@@ -1439,6 +1488,13 @@ class DAQApp(tk.Tk):
     # ══════════════════════════════════════════════════════════════════
     #  Error / status bar polling
     # ══════════════════════════════════════════════════════════════════
+    # Hard cap on retained error history -- an unbounded Tkinter Text
+    # widget became measurably slower to update as error counts climbed
+    # into the thousands during a sustained overflow storm, which can
+    # itself eat into the main thread's time and worsen the underlying
+    # acquisition lag. Old entries are dropped once this is exceeded.
+    _MAX_ERROR_LOG = 500
+
     def _poll_errors(self):
         new_items = []
         try:
@@ -1449,6 +1505,8 @@ class DAQApp(tk.Tk):
 
         if new_items:
             self._error_log.extend(new_items)
+            if len(self._error_log) > self._MAX_ERROR_LOG:
+                self._error_log = self._error_log[-self._MAX_ERROR_LOG:]
 
             # update summary line with the most recent message
             ts, source, message = new_items[-1]
@@ -1459,12 +1517,23 @@ class DAQApp(tk.Tk):
                 fg=C_RED
             )
 
-            # append all new entries to the scrollable log
-            self._err_log_text.config(state="normal")
-            for ts, source, message in new_items:
+            # Batch-build the new text and insert once, rather than one
+            # insert() call per line -- with bursts of dozens/hundreds of
+            # errors per poll cycle, per-line inserts visibly slow down
+            # the Text widget and steal time from the acquisition threads.
+            lines = []
+            for ts, source, message in new_items[-50:]:   # cap per-burst render
                 ts_str = ts.strftime("%H:%M:%S")
-                self._err_log_text.insert(
-                    "end", f"[{ts_str}] {source}: {message}\n")
+                lines.append(f"[{ts_str}] {source}: {message}")
+            if len(new_items) > 50:
+                lines.insert(0, f"... ({len(new_items)-50} more errors this update) ...")
+
+            self._err_log_text.config(state="normal")
+            self._err_log_text.insert("end", "\n".join(lines) + "\n")
+            # Trim from the top if the widget itself has grown past the cap
+            num_lines = int(self._err_log_text.index("end-1c").split(".")[0])
+            if num_lines > self._MAX_ERROR_LOG:
+                self._err_log_text.delete("1.0", f"{num_lines - self._MAX_ERROR_LOG}.0")
             self._err_log_text.see("end")
             self._err_log_text.config(state="disabled")
 
