@@ -270,7 +270,7 @@ class DAQManager:
                 task.timing.cfg_samp_clk_timing(
                     rate=2.0,
                     sample_mode=AcquisitionType.CONTINUOUS,
-                    samps_per_chan=10,
+                    samps_per_chan=120,   # 60 seconds of buffer at 2 S/s
                 )
                 task.start()
             except Exception as e:
@@ -293,11 +293,26 @@ class DAQManager:
                            + np.random.randn() * 0.2 for i in range(TC_CHANNELS)]
                 else:
                     try:
-                        result = task.read(number_of_samples_per_channel=1,
-                                           timeout=2.0)
-                        raw = [r[0] if isinstance(r, list) else r for r in result]
+                        # READ_ALL_AVAILABLE drains whatever has built up
+                        # since the last read. Returns list-of-lists or
+                        # list-of-arrays (one per channel). Use np.atleast_1d
+                        # so scalars, plain lists, and numpy arrays all work.
+                        result = task.read(
+                            number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
+                            timeout=2.0)
+                        raw = [float(np.mean(np.atleast_1d(ch_data)))
+                               for ch_data in result]
                     except Exception as e:
                         self.report_error("Module 1 (9213)", str(e))
+                        # Same read-position recovery as 9320/9223:
+                        # jump to the most recent sample so the next read
+                        # starts fresh instead of retrying a stale position.
+                        try:
+                            task.in_stream.relative_to = ReadRelativeTo.MOST_RECENT_SAMPLE
+                            task.in_stream.offset = 0
+                        except Exception as e2:
+                            self.report_error("Module 1 (9213)",
+                                              f"Could not reset read position: {e2}")
                         time.sleep(0.5)
                         continue
 
@@ -394,9 +409,11 @@ class DAQManager:
                            np.random.randn() * 0.05 for i in range(AI_9320_TOTAL)]
                 else:
                     try:
-                        data = task.read(number_of_samples_per_channel=n_samples,
-                                         timeout=2.0)
-                        raw = [float(np.mean(ch_data)) for ch_data in data]
+                        data = task.read(
+                            number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
+                            timeout=2.0)
+                        raw = [float(np.mean(np.atleast_1d(ch_data)))
+                               for ch_data in data]
                     except Exception as e:
                         self.report_error("Modules 2-6 (9320)", str(e))
                         # Once a read falls behind the live buffer (overflow,
@@ -499,9 +516,11 @@ class DAQManager:
                            np.random.randn() * 0.05 for i in range(AI_9223_TOTAL)]
                 else:
                     try:
-                        data = task.read(number_of_samples_per_channel=n_samples,
-                                         timeout=1.0)
-                        raw = [float(np.mean(ch_data)) for ch_data in data]
+                        data = task.read(
+                            number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
+                            timeout=1.0)
+                        raw = [float(np.mean(np.atleast_1d(ch_data)))
+                               for ch_data in data]
                     except Exception as e:
                         self.report_error("Module 7 (9223)", str(e))
                         # Same overflow-recovery as the 9320 loop: once a
