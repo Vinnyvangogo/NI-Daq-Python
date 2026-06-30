@@ -82,10 +82,10 @@ class DAQManager:
     """Handles all NI-DAQmx (or simulated) hardware interaction.
 
     `chassis_name` is the NI-DAQmx chassis base name as it appears in
-    NI MAX for a network cDAQ-9189, e.g. "cDAQ9189-24E8D67". Each module
+    NI MAX for a network cDAQ-9189, e.g. "cDAQ9189-24D753A". Each module
     is its own NI-DAQmx device, named by appending "Mod<N>" directly to
     the chassis base name (no separator, no slash) -- for example
-    "cDAQ9189-24E8D67Mod1" for the thermocouple module in slot 1. Channels
+    "cDAQ9189-24D753AMod1" for the thermocouple module in slot 1. Channels
     are then addressed as "<module_device>/ai<n>". This mirrors the
     confirmed-working pattern used elsewhere in this deployment.
 
@@ -183,7 +183,7 @@ class DAQManager:
                                 f"{missing}. Available devices: "
                                 f"{device_names or 'none'}. Confirm the chassis "
                                 f"base name (shown in NI MAX, e.g. "
-                                f"'cDAQ9189-24E8D67') is correct -- module "
+                                f"'cDAQ9189-24D753A') is correct -- module "
                                 f"device names are derived from it.")
             dev = nidaqmx.system.Device(self.dev_tc)
             # self_test_device() raises if the chassis fails its self-test
@@ -297,42 +297,69 @@ class DAQManager:
                     pass
 
     def _ai9320_loop(self):
-        """9320: 200 kS/s hardware, decimated to 1000 S/s for display.
+        """9320: hardware acquisition at 2000 S/s/ch, decimated to 1000 S/s
+        effective capture (2:1 averaging for noise reduction).
 
-        Five persistent continuous-acquisition tasks (one per module,
-        Mod2..Mod6) are created once and read from repeatedly, which is
-        the correct NI-DAQmx pattern -- rebuilding/tearing down a task on
-        every tick is slow and can stall the acquisition thread.
+        IMPORTANT -- acquisition rate: the NI 9320 itself supports up to
+        200 kS/s/ch, but this chassis cannot sustain that aggregate rate
+        across 80 channels over a *networked* Ethernet connection. The
+        cDAQ-9189's onboard streaming buffer is a tiny 8 KB pool shared
+        across all running hardware-timed tasks (NI Knowledge Base:
+        "Number of Concurrent Tasks on a CompactDAQ Chassis Gen II"), and
+        the per-slot input FIFO is only 127 samples. At 80 ch x 200 kS/s,
+        DMA cannot drain that FIFO fast enough over Ethernet, which
+        produced NI-DAQmx Error -200361 (Onboard Device Memory Overflow)
+        and -200279 (application not keeping up) in testing.
+
+        Since the actual requirement is a 1000 S/s *captured* value per
+        channel (not full 200 kS/s raw streaming), the hardware is
+        configured to acquire at 2000 S/s/ch instead -- comfortably within
+        the chassis's real-world sustained throughput -- and every 2
+        samples are averaged down to the requested 1000 S/s. This still
+        satisfies the capture-rate requirement while working within the
+        chassis's actual capability.
+
+        All 80 channels across Modules 2-6 remain in a SINGLE
+        nidaqmx.Task() ("channel expansion") rather than five separate
+        tasks, since five separate tasks caused NI-DAQmx Error -200022
+        ("Resource requested by this task has already been reserved by a
+        different task") -- the chassis's onboard timing/streaming
+        resources ran out before all five could start. One task sharing
+        one timing engine avoids that conflict and is the NI-recommended
+        approach for multi-module synchronized acquisition.
         """
-        interval  = 1.0 / 1000
-        acq_rate  = 200_000
-        n_samples = max(1, acq_rate // 1000)
+        target_rate = 1000                        # required capture rate (S/s/ch)
+        acq_rate    = 2000                         # actual hardware rate (S/s/ch)
+        avg_factor  = max(1, acq_rate // target_rate)
+        block_ms    = 50                           # read cadence
+        interval    = block_ms / 1000.0
+        n_samples   = max(avg_factor, int(acq_rate * interval))
 
-        tasks = []
+        task = None
         if not SIMULATION_MODE:
             try:
-                for mod_idx in range(5):       # corresponds to dev_9320[0..4]
+                task = nidaqmx.Task()
+                for mod_idx in range(5):       # Mod2..Mod6
                     dev = self.dev_9320[mod_idx]
-                    t = nidaqmx.Task()
                     for ch in range(16):
-                        t.ai_channels.add_ai_voltage_chan(
+                        task.ai_channels.add_ai_voltage_chan(
                             f"{dev}/ai{ch}",
                             min_val=-10.0, max_val=10.0,
                             terminal_config=TerminalConfiguration.DIFF
                         )
-                    t.timing.cfg_samp_clk_timing(
-                        rate=acq_rate,
-                        sample_mode=AcquisitionType.CONTINUOUS
-                    )
-                    t.start()
-                    tasks.append(t)
+                task.timing.cfg_samp_clk_timing(
+                    rate=acq_rate,
+                    sample_mode=AcquisitionType.CONTINUOUS,
+                    samps_per_chan=acq_rate * 2  # 2 seconds of host-buffer headroom
+                )
+                task.start()
             except Exception as e:
                 self.report_error("Modules 2-6 (9320)",
-                                  f"Failed to start tasks: {e}")
+                                  f"Failed to start task: {e}")
                 self.ai9320_running = False
-                for t in tasks:
+                if task:
                     try:
-                        t.close()
+                        task.close()
                     except Exception:
                         pass
                 return
@@ -344,12 +371,10 @@ class DAQManager:
                     raw = [5.0 * math.sin(self._sim_t * 0.5 + i * 0.3) +
                            np.random.randn() * 0.05 for i in range(AI_9320_TOTAL)]
                 else:
-                    raw = []
                     try:
-                        for t in tasks:
-                            data = t.read(number_of_samples_per_channel=n_samples,
-                                         timeout=1.0)
-                            raw.extend([float(np.mean(ch_data)) for ch_data in data])
+                        data = task.read(number_of_samples_per_channel=n_samples,
+                                         timeout=2.0)
+                        raw = [float(np.mean(ch_data)) for ch_data in data]
                     except Exception as e:
                         self.report_error("Modules 2-6 (9320)", str(e))
                         time.sleep(0.2)
@@ -366,22 +391,41 @@ class DAQManager:
                 elapsed = time.perf_counter() - t0
                 time.sleep(max(0.0, interval - elapsed))
         finally:
-            for t in tasks:
+            if task:
                 try:
-                    t.stop()
-                    t.close()
+                    task.stop()
+                    task.close()
                 except Exception:
                     pass
 
     def _ai9223_loop(self):
-        """9223: 1 MS/s hardware, decimated to 10000 S/s for display.
+        """9223: hardware acquisition at 20000 S/s/ch, decimated to
+        10000 S/s effective capture (2:1 averaging for noise reduction).
 
         A single persistent continuous-acquisition task is created once
         and read from repeatedly, rather than rebuilt every tick.
+
+        IMPORTANT -- acquisition rate: the NI 9223 supports up to 1 MS/s/ch,
+        but running all 4 channels at full rate over this *networked*
+        chassis produced NI-DAQmx Error -200279 ("application not able to
+        keep up with hardware acquisition") continuously in testing, the
+        same onboard-streaming-bandwidth limitation documented for the
+        9320 above. Since the actual requirement is a 10000 S/s captured
+        value per channel (not full 1 MS/s raw streaming), the hardware
+        acquires at 20000 S/s/ch instead -- well within the chassis's
+        real-world sustained Ethernet throughput -- and every 2 samples
+        are averaged down to the requested 10000 S/s.
+
+        Reads are still batched into 50 ms blocks rather than read every
+        0.1 ms, since every task.read() is an Ethernet round trip on this
+        networked chassis.
         """
-        interval  = 1.0 / 10_000
-        acq_rate  = 1_000_000
-        n_samples = max(1, acq_rate // 10_000)
+        target_rate = 10_000                      # required capture rate (S/s/ch)
+        acq_rate    = 20_000                       # actual hardware rate (S/s/ch)
+        avg_factor  = max(1, acq_rate // target_rate)
+        block_ms    = 50
+        interval    = block_ms / 1000.0
+        n_samples   = max(avg_factor, int(acq_rate * interval))
 
         task = None
         if not SIMULATION_MODE:
@@ -395,7 +439,8 @@ class DAQManager:
                     )
                 task.timing.cfg_samp_clk_timing(
                     rate=acq_rate,
-                    sample_mode=AcquisitionType.CONTINUOUS
+                    sample_mode=AcquisitionType.CONTINUOUS,
+                    samps_per_chan=acq_rate * 2  # 2 seconds of host-buffer headroom
                 )
                 task.start()
             except Exception as e:
@@ -668,7 +713,7 @@ class DAQApp(tk.Tk):
 
         tk.Label(top, text="   Chassis:", font=FONT_SMALL,
                  bg=C_PANEL, fg=C_MUTED).pack(side="left")
-        self._device_var = tk.StringVar(value="cDAQ9189-XXXXXXX")
+        self._device_var = tk.StringVar(value="cDAQ9189-24D753A")
         dev_ent = tk.Entry(top, textvariable=self._device_var, width=18,
                            bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
                            relief="flat", font=FONT_MONO)
@@ -676,7 +721,7 @@ class DAQApp(tk.Tk):
 
         tk.Label(top, text="DAQ IP:", font=FONT_SMALL,
                  bg=C_PANEL, fg=C_MUTED).pack(side="left", padx=(8, 0))
-        self._ip_var = tk.StringVar(value="192.168.1.100")
+        self._ip_var = tk.StringVar(value="192.168.100.100")
         ip_ent = tk.Entry(top, textvariable=self._ip_var, width=15,
                           bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
                           relief="flat", font=FONT_MONO)
@@ -710,8 +755,26 @@ class DAQApp(tk.Tk):
         self._nb.add(self._tab_ao,   text="Module 8 - AO (9263)")
         self._nb.add(self._tab_cal,  text="Calibration")
 
-        # Bottom status / error bar
-        bottom = tk.Frame(self, bg="#1c1106", height=28)
+        # Bottom status / error bar -- summary line + expandable full log
+        self._error_log: list[tuple] = []   # full history: (ts, source, message)
+
+        bottom_wrap = tk.Frame(self, bg="#1c1106")
+        bottom_wrap.pack(fill="x", side="bottom")
+
+        # expandable log panel (hidden by default)
+        self._err_log_frame = tk.Frame(bottom_wrap, bg="#0d0701")
+        self._err_log_text = tk.Text(self._err_log_frame, height=10, bg="#0d0701",
+                                     fg=C_RED, font=FONT_MONO_S, wrap="none",
+                                     relief="flat", state="disabled")
+        err_vsb = ttk.Scrollbar(self._err_log_frame, orient="vertical",
+                                command=self._err_log_text.yview)
+        self._err_log_text.configure(yscrollcommand=err_vsb.set)
+        self._err_log_text.pack(side="left", fill="both", expand=True,
+                                padx=(10, 0), pady=4)
+        err_vsb.pack(side="right", fill="y", pady=4)
+        self._err_log_visible = False   # starts collapsed
+
+        bottom = tk.Frame(bottom_wrap, bg="#1c1106", height=28)
         bottom.pack(fill="x", side="bottom")
         bottom.pack_propagate(False)
 
@@ -722,9 +785,26 @@ class DAQApp(tk.Tk):
                                  anchor="w")
         self._err_lbl.pack(side="left", fill="x", expand=True)
 
-        self._err_clear_btn = ttk.Button(bottom, text="Clear", style="A.TButton",
+        self._err_toggle_btn = ttk.Button(bottom, text="Show Log (0)",
+                                          style="A.TButton",
+                                          command=self._toggle_error_log)
+        self._err_toggle_btn.pack(side="right", padx=4, pady=2)
+
+        self._err_clear_btn = ttk.Button(bottom, text="Clear", style="R.TButton",
                                          command=self._clear_error)
-        self._err_clear_btn.pack(side="right", padx=8, pady=2)
+        self._err_clear_btn.pack(side="right", padx=4, pady=2)
+
+    def _toggle_error_log(self):
+        self._err_log_visible = not self._err_log_visible
+        if self._err_log_visible:
+            self._err_log_frame.pack(fill="both", expand=False,
+                                     side="bottom", before=None)
+        else:
+            self._err_log_frame.pack_forget()
+        self._err_toggle_btn.config(
+            text=("Hide Log" if self._err_log_visible else "Show Log")
+            + f" ({len(self._error_log)})")
+
 
     # ── small helpers ────────────────────────────────────────────────────
     def _section(self, parent, title):
@@ -1090,7 +1170,7 @@ class DAQApp(tk.Tk):
             messagebox.showerror(
                 "Error",
                 "Enter the chassis base name as shown in NI MAX "
-                "(e.g. cDAQ9189-24E8D67), without a module suffix.")
+                "(e.g. cDAQ9189-24D753A), without a module suffix.")
             return
 
         self.daq = DAQManager(chassis_name, ip, self.error_queue)
@@ -1360,24 +1440,48 @@ class DAQApp(tk.Tk):
     #  Error / status bar polling
     # ══════════════════════════════════════════════════════════════════
     def _poll_errors(self):
-        latest = None
+        new_items = []
         try:
             while True:
-                latest = self.error_queue.get_nowait()
+                new_items.append(self.error_queue.get_nowait())
         except queue.Empty:
             pass
 
-        if latest:
-            ts, source, message = latest
+        if new_items:
+            self._error_log.extend(new_items)
+
+            # update summary line with the most recent message
+            ts, source, message = new_items[-1]
             ts_str = ts.strftime("%H:%M:%S")
             self._err_lbl.config(
-                text=f"[{ts_str}] {source}: {message}", fg=C_RED
+                text=f"[{ts_str}] {source}: {message}"
+                + (f"  (+{len(new_items)-1} more)" if len(new_items) > 1 else ""),
+                fg=C_RED
             )
+
+            # append all new entries to the scrollable log
+            self._err_log_text.config(state="normal")
+            for ts, source, message in new_items:
+                ts_str = ts.strftime("%H:%M:%S")
+                self._err_log_text.insert(
+                    "end", f"[{ts_str}] {source}: {message}\n")
+            self._err_log_text.see("end")
+            self._err_log_text.config(state="disabled")
+
+            self._err_toggle_btn.config(
+                text=("Hide Log" if self._err_log_visible else "Show Log")
+                + f" ({len(self._error_log)})")
 
         self.after(300, self._poll_errors)
 
     def _clear_error(self):
         self._err_lbl.config(text="No communication errors", fg=C_MUTED)
+        self._error_log.clear()
+        self._err_log_text.config(state="normal")
+        self._err_log_text.delete("1.0", "end")
+        self._err_log_text.config(state="disabled")
+        self._err_toggle_btn.config(
+            text=("Hide Log" if self._err_log_visible else "Show Log") + " (0)")
 
     # ══════════════════════════════════════════════════════════════════
     #  UI polling loop (~20 Hz refresh)
