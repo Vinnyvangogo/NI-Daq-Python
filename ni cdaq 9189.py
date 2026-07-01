@@ -783,6 +783,9 @@ class DAQApp(tk.Tk):
         self._log_file: Optional[str] = None
         self._log_writer = None
         self._log_fh = None
+        # Pre-populated from JSON by _load_names_from_json before _build_ui
+        self._json_chassis = "cDAQ9189-XXXXXXX"
+        self._json_ip      = "192.168.1.100"
 
         self._build_style()
         self._load_names_from_json()   # update name lists from JSON before UI is built
@@ -855,7 +858,7 @@ class DAQApp(tk.Tk):
 
         tk.Label(top, text="   Chassis:", font=FONT_SMALL,
                  bg=C_PANEL, fg=C_MUTED).pack(side="left")
-        self._device_var = tk.StringVar(value="cDAQ9189-XXXXXXX")
+        self._device_var = tk.StringVar(value=self._json_chassis)
         dev_ent = tk.Entry(top, textvariable=self._device_var, width=18,
                            bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
                            relief="flat", font=FONT_MONO)
@@ -863,7 +866,7 @@ class DAQApp(tk.Tk):
 
         tk.Label(top, text="DAQ IP:", font=FONT_SMALL,
                  bg=C_PANEL, fg=C_MUTED).pack(side="left", padx=(8, 0))
-        self._ip_var = tk.StringVar(value="192.168.1.100")
+        self._ip_var = tk.StringVar(value=self._json_ip)
         ip_ent = tk.Entry(top, textvariable=self._ip_var, width=15,
                           bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
                           relief="flat", font=FONT_MONO)
@@ -1542,6 +1545,8 @@ class DAQApp(tk.Tk):
                 "or click Apply All on the Calibration tab to load them. "
                 f"Saved: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             ),
+            "chassis_name": self._device_var.get().strip(),
+            "ip_address":   self._ip_var.get().strip(),
             "NI_9213_module_1_thermocouples": channels_tc,
             "NI_9320_modules_2_to_6":         channels_9320,
             "NI_9223_module_7":               channels_9223,
@@ -1593,6 +1598,15 @@ class DAQApp(tk.Tk):
                 ch = rec.get("channel", -1)
                 if 0 <= ch < len(AO_NAMES) and rec.get("name"):
                     AO_NAMES[ch] = rec["name"]
+
+            # Chassis name and IP are stored as top-level fields so they
+            # can be set once in the JSON and auto-populated on every launch.
+            # _device_var and _ip_var don't exist yet when this runs (UI not
+            # built yet), so store them as instance attrs for _build_ui to pick up.
+            if data.get("chassis_name"):
+                self._json_chassis = data["chassis_name"]
+            if data.get("ip_address"):
+                self._json_ip = data["ip_address"]
 
         except Exception as e:
             # Non-fatal — fall back to the hardcoded defaults.
