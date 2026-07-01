@@ -1,178 +1,731 @@
 {
-  "9320_scale": [
-    "1.0",
-    "2.0",
-    "3.0",
-    "4.0",
-    "5.0",
-    "6.0",
-    "7.0",
-    "8.0",
-    "9.0",
-    "10.0",
-    "100.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0"
+  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-01 13:43:15",
+  "NI_9213_module_1_thermocouples": [
+    {
+      "module": 1,
+      "channel": 0,
+      "name": "MCU1_Pos1",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 1,
+      "name": "MCU1_Pos2",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 2,
+      "name": "MCU1_Pos3",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 3,
+      "name": "MCU1_Pos4",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 4,
+      "name": "MCU1_Pos5",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 5,
+      "name": "MCU1_Pos6",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 6,
+      "name": "MCU2_Pos1",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 7,
+      "name": "MCU2_Pos2",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 8,
+      "name": "MCU2_Pos3",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 9,
+      "name": "MCU2_Pos4",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 10,
+      "name": "MCU2_Pos5",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 11,
+      "name": "MCU2_Pos6",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 12,
+      "name": "SPARE",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 13,
+      "name": "SPARE",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 14,
+      "name": "SPARE",
+      "scale": 1.0,
+      "offset": 0.0
+    },
+    {
+      "module": 1,
+      "channel": 15,
+      "name": "SPARE",
+      "scale": 1.0,
+      "offset": 0.0
+    }
   ],
-  "9320_offset": [
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0"
+  "NI_9320_modules_2_to_6": [
+    {
+      "module": 2,
+      "channel": 0,
+      "name": "M1ACIN_PHA_VSENSE_OUT",
+      "scale": "123.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 1,
+      "name": "M1ACIN_PHB_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 2,
+      "name": "M1ACIN_PHC_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 3,
+      "name": "EPDU_PHA_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 4,
+      "name": "EPDU_PHB_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 5,
+      "name": "EPDU_PHC_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 6,
+      "name": "M2ACIN_PHA_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 7,
+      "name": "M2ACIN_PHB_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 8,
+      "name": "M2ACIN_PHC_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 9,
+      "name": "LAA_PHA_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 10,
+      "name": "LAA_PHB_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 11,
+      "name": "LAA_PHC_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 12,
+      "name": "LOA_PHA_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 13,
+      "name": "LOA_PHB_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 14,
+      "name": "LOA_PHC_VSENSE_OUT",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 2,
+      "channel": 15,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 0,
+      "name": "M1ACIN_PHA_ISENSE",
+      "scale": "321.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 1,
+      "name": "M1ACIN_PHB_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 2,
+      "name": "M1ACIN_PHC_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 3,
+      "name": "EPDU_PHA_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 4,
+      "name": "EPDU_PHB_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 5,
+      "name": "EPDU_PHC_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 6,
+      "name": "M2ACIN_PHA_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 7,
+      "name": "M2ACIN_PHB_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 8,
+      "name": "M2ACIN_PHC_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 9,
+      "name": "LAA_PHA_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 10,
+      "name": "LAA_PHB_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 11,
+      "name": "LAA_PHC_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 12,
+      "name": "LOA_PHA_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 13,
+      "name": "LOA_PHB_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 14,
+      "name": "LOA_PHC_ISENSE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 3,
+      "channel": 15,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 0,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 1,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 2,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 3,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 4,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 5,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 6,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 7,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 8,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 9,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 10,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 11,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 12,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 13,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 14,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 4,
+      "channel": 15,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 0,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 1,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 2,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 3,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 4,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 5,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 6,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 7,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 8,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 9,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 10,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 11,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 12,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 13,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 14,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 5,
+      "channel": 15,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 0,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 1,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 2,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 3,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 4,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 5,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 6,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 7,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 8,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 9,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 10,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 11,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 12,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 13,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 14,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 6,
+      "channel": 15,
+      "name": "SPARE",
+      "scale": "1.0",
+      "offset": "0.0"
+    }
   ],
-  "9223_scale": [
-    "1.0",
-    "1.0",
-    "1.0",
-    "1.0"
+  "NI_9223_module_7": [
+    {
+      "module": 7,
+      "channel": 1,
+      "name": "A429_DSCS_TX_A",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 7,
+      "channel": 2,
+      "name": "A429_DSCS_RX_A",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 7,
+      "channel": 3,
+      "name": "A429_MCU2_TX_A",
+      "scale": "1.0",
+      "offset": "0.0"
+    },
+    {
+      "module": 7,
+      "channel": 4,
+      "name": "A429_MCU2_RX_A",
+      "scale": "1.0",
+      "offset": "0.0"
+    }
   ],
-  "9223_offset": [
-    "0.0",
-    "0.0",
-    "0.0",
-    "0.0"
+  "NI_9263_module_8_ao_reference": [
+    {
+      "module": 8,
+      "channel": 0,
+      "name": "DSCS_STO_RAMP_DAQ"
+    },
+    {
+      "module": 8,
+      "channel": 1,
+      "name": "MCU2_EN_RAMP_DAQ"
+    },
+    {
+      "module": 8,
+      "channel": 2,
+      "name": "EMPTY"
+    },
+    {
+      "module": 8,
+      "channel": 3,
+      "name": "EMPTY"
+    }
   ]
 }

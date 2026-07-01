@@ -55,9 +55,75 @@ AI_9320_TOTAL    = 80          # Modules 2-6, 16 ch each
 AI_9223_TOTAL    = 4            # Module 7
 AO_9263_TOTAL    = 4            # Module 8
 
-# Calibration is auto-saved/loaded from a JSON file next to the script
-CAL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "cdaq_calibration.json")
+# ── Channel names from Module_Channel_Names.xlsx ───────────────────────────
+TC_NAMES = [
+    "MCU1",           # TC0
+    "JVSENSE-1",      # TC1
+    "JVSENSE-4",      # TC2
+    "JVSENSE-6",      # TC3
+    "JVSENSE-7",      # TC4
+    "JVSENSE-10",     # TC5
+    "JVSENSE-12",     # TC6
+    "JVSENSE-17",     # TC7
+    "JVSENSE-20",     # TC8
+    "JVSENSE-22",     # TC9
+    "JVSENSE-23",     # TC10
+    "JVSENSE-26",     # TC11
+    "JVSENSE-28",     # TC12
+    "JVSENSE-29",     # TC13
+    "JVSENSE-32",     # TC14
+    "JVSENSE-34",     # TC15
+]
+
+AI9320_NAMES = [
+    # Module 2 — Voltage sense
+    "M1ACIN_PHA_VSENSE_OUT", "M1ACIN_PHB_VSENSE_OUT", "M1ACIN_PHC_VSENSE_OUT",
+    "EPDU_PHA_VSENSE_OUT",   "EPDU_PHB_VSENSE_OUT",   "EPDU_PHC_VSENSE_OUT",
+    "M2ACIN_PHA_VSENSE_OUT", "M2ACIN_PHB_VSENSE_OUT", "M2ACIN_PHC_VSENSE_OUT",
+    "LAA_PHA_VSENSE_OUT",    "LAA_PHB_VSENSE_OUT",    "LAA_PHC_VSENSE_OUT",
+    "LOA_PHA_VSENSE_OUT",    "LOA_PHB_VSENSE_OUT",    "LOA_PHC_VSENSE_OUT",
+    "SPARE",
+    # Module 3 — Current sense
+    "M1ACIN_PHA_ISENSE", "M1ACIN_PHB_ISENSE", "M1ACIN_PHC_ISENSE",
+    "EPDU_PHA_ISENSE",   "EPDU_PHB_ISENSE",   "EPDU_PHC_ISENSE",
+    "M2ACIN_PHA_ISENSE", "M2ACIN_PHB_ISENSE", "M2ACIN_PHC_ISENSE",
+    "LAA_PHA_ISENSE",    "LAA_PHB_ISENSE",    "LAA_PHC_ISENSE",
+    "LOA_PHA_ISENSE",    "LOA_PHB_ISENSE",    "LOA_PHC_ISENSE",
+    "SPARE",
+    # Modules 4-6 — Spare
+] + ["SPARE"] * 48
+
+AI9223_NAMES = [
+    "A429_DSCS_TX_A",   # CH1
+    "A429_DSCS_RX_A",   # CH2
+    "A429_MCU2_TX_A",   # CH3
+    "A429_MCU2_RX_A",   # CH4
+]
+
+AO_NAMES = [
+    "DSCS_STO_RAMP_DAQ",    # AO0
+    "MCU2_EN_RAMP_DAQ",     # AO1
+    "EMPTY",                # AO2
+    "EMPTY",                # AO3
+]
+
+# Calibration JSON -- checked in script directory first, then current
+# working directory, so it works regardless of how the script is launched.
+def _find_cal_file():
+    candidates = []
+    try:
+        candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                        "cdaq_calibration.json"))
+    except NameError:
+        pass
+    candidates.append(os.path.join(os.getcwd(), "cdaq_calibration.json"))
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    # Default to script directory (or cwd) for writing new files
+    return candidates[0] if candidates else "cdaq_calibration.json"
+
+CAL_FILE = _find_cal_file()
 
 # Colours
 C_BG     = "#0d1117"
@@ -719,8 +785,9 @@ class DAQApp(tk.Tk):
         self._log_fh = None
 
         self._build_style()
+        self._load_names_from_json()   # update name lists from JSON before UI is built
         self._build_ui()
-        self._load_calibration()   # restore saved cal values into the UI fields
+        self._load_calibration()       # restore saved scale/offset values into UI fields
 
         # In simulation mode, auto-connect and auto-start so demo data
         # is visible immediately without requiring the Connect button.
@@ -933,13 +1000,13 @@ class DAQApp(tk.Tk):
 
             chk_var = tk.BooleanVar(value=True)
             self._tc_checks.append(chk_var)
-            ttk.Checkbutton(cell, text=f"TC{i+1:02d}", variable=chk_var,
+            ttk.Checkbutton(cell, text=f"TC{i:02d} · {TC_NAMES[i]}", variable=chk_var,
                             style="Panel.TCheckbutton",
                             command=lambda idx=i: self._tc_toggle(idx)
                             ).pack(pady=(2, 0))
 
             gauge = CircularGauge(cell, size=84, vmin=0, vmax=120,
-                                  unit="C", label="K-type")
+                                  unit="C", label=f"TC{i:02d}")
             gauge.pack(padx=4, pady=2)
             self._tc_gauges.append(gauge)
 
@@ -998,8 +1065,8 @@ class DAQApp(tk.Tk):
 
                 chk_var = tk.BooleanVar(value=True)
                 self._ai9320_checks.append(chk_var)
-                ttk.Checkbutton(row, variable=chk_var, text=f"{idx+1:02d}",
-                                style="Panel.TCheckbutton", width=4,
+                ttk.Checkbutton(row, variable=chk_var, text=f"{ch:02d}",
+                                style="Panel.TCheckbutton", width=3,
                                 command=lambda i=idx: self._ai9320_toggle(i)
                                 ).pack(side="left")
 
@@ -1007,7 +1074,10 @@ class DAQApp(tk.Tk):
                 self._ai9320_vars.append(val)
                 tk.Label(row, textvariable=val, width=9,
                          font=FONT_MONO_S, bg=C_INPUT, fg=C_GREEN,
-                         anchor="e", padx=2).pack(side="left", padx=2, fill="x", expand=True)
+                         anchor="e", padx=2).pack(side="left", padx=2)
+                tk.Label(row, text=AI9320_NAMES[idx], font=FONT_TINY,
+                         bg=C_PANEL, fg=C_MUTED, anchor="w"
+                         ).pack(side="left", padx=2, fill="x", expand=True)
 
         return tab
 
@@ -1052,10 +1122,12 @@ class DAQApp(tk.Tk):
 
             chk_var = tk.BooleanVar(value=True)
             self._ai9223_checks.append(chk_var)
-            ttk.Checkbutton(cell, text=f"AI{i+1} (Diff)", variable=chk_var,
+            ttk.Checkbutton(cell, text=f"CH{i+1}", variable=chk_var,
                             style="Panel.TCheckbutton",
                             command=lambda idx=i: self._ai9223_toggle(idx)
                             ).pack()
+            tk.Label(cell, text=AI9223_NAMES[i], font=FONT_TINY,
+                     bg=C_PANEL, fg=C_ACCENT).pack()
 
             val = tk.StringVar(value="---")
             self._ai9223_vars.append(val)
@@ -1100,6 +1172,8 @@ class DAQApp(tk.Tk):
 
             tk.Label(cell, text=f"AO {i+1}", font=FONT_HEAD,
                      bg=C_PANEL, fg=C_ACCENT).pack()
+            tk.Label(cell, text=AO_NAMES[i], font=FONT_TINY,
+                     bg=C_PANEL, fg=C_MUTED).pack()
 
             cur_var = tk.StringVar(value="0.000 V")
             self._ao_current_vars.append(cur_var)
@@ -1141,96 +1215,92 @@ class DAQApp(tk.Tk):
     def _build_cal_tab(self):
         tab = tk.Frame(self._nb, bg=C_BG)
 
+        # Header bar
         header = tk.Frame(tab, bg=C_BG)
         header.pack(fill="x", padx=10, pady=4)
         tk.Label(header, text="Calibration - Scale & Offset", font=FONT_HEAD,
                  bg=C_BG, fg=C_ACCENT).pack(side="left")
-        tk.Label(header, text="  output = (raw x scale) + offset",
+        tk.Label(header, text="  output = (raw × scale) + offset",
                  font=FONT_TINY, bg=C_BG, fg=C_MUTED).pack(side="left", padx=10)
         ttk.Button(header, text="Apply All", style="G.TButton",
                    command=self._apply_calibration).pack(side="right")
-
-        body = tk.Frame(tab, bg=C_BG)
-        body.pack(fill="both", expand=True, padx=8, pady=4)
 
         self._cal_9320_scale:  list[tk.StringVar] = []
         self._cal_9320_offset: list[tk.StringVar] = []
         self._cal_9223_scale:  list[tk.StringVar] = []
         self._cal_9223_offset: list[tk.StringVar] = []
 
-        # Left: 9320, split into 4 sub-columns of 20 channels each (fits all 80)
-        left = ttk.LabelFrame(body, text=" NI 9320 - 80 Channels (Modules 2-6) ",
-                              padding=4)
-        left.pack(side="left", fill="both", expand=True, padx=(0, 4))
+        # Scrollable body
+        canvas = tk.Canvas(tab, bg=C_BG, highlightthickness=0)
+        vsb = ttk.Scrollbar(tab, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+        vsb.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        body = tk.Frame(canvas, bg=C_BG)
+        _win = canvas.create_window((0, 0), window=body, anchor="nw")
 
-        sub_cols = 4
-        per_col  = AI_9320_TOTAL // sub_cols  # 20
-        for sc in range(sub_cols):
-            colf = tk.Frame(left, bg=C_BG)
-            colf.grid(row=0, column=sc, sticky="n", padx=4)
-            left.columnconfigure(sc, weight=1)
+        def _resize(e):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(_win, width=canvas.winfo_width())
+        body.bind("<Configure>", _resize)
+        canvas.bind("<Configure>", _resize)
+        canvas.bind_all("<MouseWheel>",
+                        lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
 
-            hdr = tk.Frame(colf, bg=C_BG)
-            hdr.pack(fill="x")
-            tk.Label(hdr, text="Ch", font=FONT_TINY, bg=C_BG, fg=C_MUTED,
+        def _col_hdr(parent):
+            h = tk.Frame(parent, bg=C_PANEL)
+            h.pack(fill="x", padx=4, pady=(2, 0))
+            tk.Label(h, text="Ch", font=FONT_TINY, bg=C_PANEL, fg=C_MUTED,
                      width=4, anchor="w").pack(side="left")
-            tk.Label(hdr, text="Scale", font=FONT_TINY, bg=C_BG, fg=C_MUTED,
-                     width=6, anchor="w").pack(side="left")
-            tk.Label(hdr, text="Offset", font=FONT_TINY, bg=C_BG, fg=C_MUTED,
-                     width=6, anchor="w").pack(side="left")
+            tk.Label(h, text="Signal Name", font=FONT_TINY, bg=C_PANEL, fg=C_MUTED,
+                     width=22, anchor="w").pack(side="left")
+            tk.Label(h, text="Scale", font=FONT_TINY, bg=C_PANEL, fg=C_MUTED,
+                     width=8, anchor="w").pack(side="left")
+            tk.Label(h, text="Offset", font=FONT_TINY, bg=C_PANEL, fg=C_MUTED,
+                     width=8, anchor="w").pack(side="left")
 
-            for j in range(per_col):
-                idx = sc * per_col + j
-                row = tk.Frame(colf, bg=C_BG)
-                row.pack(fill="x", pady=0)
-
-                tk.Label(row, text=f"{idx+1:02d}", font=FONT_MONO_S,
-                         bg=C_BG, fg=C_TEXT, width=4, anchor="w").pack(side="left")
-
-                s_var = tk.StringVar(value="1.0")
-                o_var = tk.StringVar(value="0.0")
-                self._cal_9320_scale.append(s_var)
-                self._cal_9320_offset.append(o_var)
-
-                tk.Entry(row, textvariable=s_var, width=6, font=FONT_MONO_S,
-                         bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
-                         relief="flat").pack(side="left", padx=1)
-                tk.Entry(row, textvariable=o_var, width=6, font=FONT_MONO_S,
-                         bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
-                         relief="flat").pack(side="left", padx=1)
-
-        # Right: 9223 (4 channels)
-        right = ttk.LabelFrame(body, text=" NI 9223 - 4 Channels (Module 7) ",
-                               padding=4)
-        right.pack(side="left", fill="y", padx=(4, 0))
-
-        hdr2 = tk.Frame(right, bg=C_BG)
-        hdr2.pack(fill="x")
-        tk.Label(hdr2, text="Ch", font=FONT_TINY, bg=C_BG, fg=C_MUTED,
-                 width=5, anchor="w").pack(side="left")
-        tk.Label(hdr2, text="Scale", font=FONT_TINY, bg=C_BG, fg=C_MUTED,
-                 width=8, anchor="w").pack(side="left")
-        tk.Label(hdr2, text="Offset", font=FONT_TINY, bg=C_BG, fg=C_MUTED,
-                 width=8, anchor="w").pack(side="left")
-
-        for i in range(AI_9223_TOTAL):
-            row = tk.Frame(right, bg=C_BG)
-            row.pack(fill="x", pady=1)
-
-            tk.Label(row, text=f"AI{i+1}", font=FONT_MONO_S,
-                     bg=C_BG, fg=C_TEXT, width=5, anchor="w").pack(side="left")
-
-            s_var = tk.StringVar(value="1.0")
-            o_var = tk.StringVar(value="0.0")
-            self._cal_9223_scale.append(s_var)
-            self._cal_9223_offset.append(o_var)
-
+        def _cal_row(parent, ch_label, name, s_var, o_var):
+            row = tk.Frame(parent, bg=C_PANEL)
+            row.pack(fill="x", padx=4, pady=1)
+            tk.Label(row, text=ch_label, font=FONT_MONO_S,
+                     bg=C_PANEL, fg=C_TEXT, width=4, anchor="w").pack(side="left")
+            tk.Label(row, text=name, font=FONT_TINY,
+                     bg=C_PANEL, fg=C_ACCENT, width=22, anchor="w").pack(side="left")
             tk.Entry(row, textvariable=s_var, width=8, font=FONT_MONO_S,
                      bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
                      relief="flat").pack(side="left", padx=2)
             tk.Entry(row, textvariable=o_var, width=8, font=FONT_MONO_S,
                      bg=C_INPUT, fg=C_TEXT, insertbackground=C_TEXT,
                      relief="flat").pack(side="left", padx=2)
+
+        # ── NI 9320: one section per module, 16 channels each ──────────
+        for mod_idx in range(5):
+            mod_num = mod_idx + 2
+            sec = ttk.LabelFrame(body,
+                                 text=f" Module {mod_num}  ·  NI 9320  ·  Channels 0–15 ",
+                                 padding=4)
+            sec.pack(fill="x", padx=8, pady=6)
+            _col_hdr(sec)
+            for ch in range(16):
+                idx = mod_idx * 16 + ch
+                s_var = tk.StringVar(value="1.0")
+                o_var = tk.StringVar(value="0.0")
+                self._cal_9320_scale.append(s_var)
+                self._cal_9320_offset.append(o_var)
+                _cal_row(sec, f"CH{ch:02d}", AI9320_NAMES[idx], s_var, o_var)
+
+        # ── NI 9223: Module 7, 4 channels ──────────────────────────────
+        sec7 = ttk.LabelFrame(body,
+                              text=" Module 7  ·  NI 9223  ·  Channels 1–4 ",
+                              padding=4)
+        sec7.pack(fill="x", padx=8, pady=6)
+        _col_hdr(sec7)
+        for i in range(AI_9223_TOTAL):
+            s_var = tk.StringVar(value="1.0")
+            o_var = tk.StringVar(value="0.0")
+            self._cal_9223_scale.append(s_var)
+            self._cal_9223_offset.append(o_var)
+            _cal_row(sec7, f"CH{i+1}", AI9223_NAMES[i], s_var, o_var)
 
         return tab
 
@@ -1418,12 +1488,64 @@ class DAQApp(tk.Tk):
     #  Calibration apply
     # ══════════════════════════════════════════════════════════════════
     def _save_calibration(self):
-        """Save all calibration values to cdaq_calibration.json next to the script."""
+        """Save all calibration values to cdaq_calibration.json next to the script.
+
+        Each channel is saved as a record with its module, channel number,
+        signal name, scale, and offset so the file is self-documenting and
+        readable without needing to cross-reference the spreadsheet.
+        """
+        channels_tc = []
+        for i in range(TC_CHANNELS):
+            channels_tc.append({
+                "module":  1,
+                "channel": i,
+                "name":    TC_NAMES[i],
+                "scale":   1.0,
+                "offset":  0.0,
+            })
+
+        channels_9320 = []
+        for i in range(AI_9320_TOTAL):
+            mod  = (i // 16) + 2
+            ch   = i % 16
+            channels_9320.append({
+                "module":  mod,
+                "channel": ch,
+                "name":    AI9320_NAMES[i],
+                "scale":   self._cal_9320_scale[i].get(),
+                "offset":  self._cal_9320_offset[i].get(),
+            })
+
+        channels_9223 = []
+        for i in range(AI_9223_TOTAL):
+            channels_9223.append({
+                "module":  7,
+                "channel": i + 1,
+                "name":    AI9223_NAMES[i],
+                "scale":   self._cal_9223_scale[i].get(),
+                "offset":  self._cal_9223_offset[i].get(),
+            })
+
+        channels_ao = []
+        for i in range(AO_9263_TOTAL):
+            channels_ao.append({
+                "module":  8,
+                "channel": i,
+                "name":    AO_NAMES[i],
+            })
+
         data = {
-            "9320_scale":  [v.get() for v in self._cal_9320_scale],
-            "9320_offset": [v.get() for v in self._cal_9320_offset],
-            "9223_scale":  [v.get() for v in self._cal_9223_scale],
-            "9223_offset": [v.get() for v in self._cal_9223_offset],
+            "_info": (
+                "cDAQ-9189 calibration file. "
+                "Applied as: output = (raw * scale) + offset. "
+                "Edit scale and offset values here, then restart the script "
+                "or click Apply All on the Calibration tab to load them. "
+                f"Saved: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            ),
+            "NI_9213_module_1_thermocouples": channels_tc,
+            "NI_9320_modules_2_to_6":         channels_9320,
+            "NI_9223_module_7":               channels_9223,
+            "NI_9263_module_8_ao_reference":  channels_ao,
         }
         try:
             with open(CAL_FILE, "w") as f:
@@ -1431,6 +1553,54 @@ class DAQApp(tk.Tk):
         except Exception as e:
             messagebox.showwarning("Calibration Save Error",
                                    f"Could not save calibration to:\n{CAL_FILE}\n\n{e}")
+
+    def _load_names_from_json(self):
+        """Read channel names from cdaq_calibration.json and update the
+        module-level name lists (TC_NAMES, AI9320_NAMES, AI9223_NAMES,
+        AO_NAMES) before the UI is built, so all widget labels, gauge
+        titles, and CSV headers automatically reflect any names edited
+        in the JSON file without touching the script itself.
+        """
+        if not os.path.exists(CAL_FILE):
+            # Queue so it appears in the bottom error bar once the UI is up
+            self.error_queue.put((
+                datetime.now(), "Calibration JSON",
+                f"Not found: {CAL_FILE}  --  using built-in default names. "
+                f"Place cdaq_calibration.json in the same folder as this script."
+            ))
+            return
+
+        try:
+            with open(CAL_FILE) as f:
+                data = json.load(f)
+
+            for rec in data.get("NI_9213_module_1_thermocouples", []):
+                ch = rec.get("channel", -1)
+                if 0 <= ch < len(TC_NAMES) and rec.get("name"):
+                    TC_NAMES[ch] = rec["name"]
+
+            for rec in data.get("NI_9320_modules_2_to_6", []):
+                idx = (rec.get("module", 2) - 2) * 16 + rec.get("channel", 0)
+                if 0 <= idx < len(AI9320_NAMES) and rec.get("name"):
+                    AI9320_NAMES[idx] = rec["name"]
+
+            for rec in data.get("NI_9223_module_7", []):
+                idx = rec.get("channel", 1) - 1
+                if 0 <= idx < len(AI9223_NAMES) and rec.get("name"):
+                    AI9223_NAMES[idx] = rec["name"]
+
+            for rec in data.get("NI_9263_module_8_ao_reference", []):
+                ch = rec.get("channel", -1)
+                if 0 <= ch < len(AO_NAMES) and rec.get("name"):
+                    AO_NAMES[ch] = rec["name"]
+
+        except Exception as e:
+            # Non-fatal — fall back to the hardcoded defaults.
+            # Queue the error so it shows in the bottom status bar.
+            self.error_queue.put((
+                datetime.now(), "Calibration JSON",
+                f"Could not load names from {CAL_FILE}: {e}"
+            ))
 
     def _load_calibration(self):
         """Load calibration values from cdaq_calibration.json if it exists."""
@@ -1440,21 +1610,22 @@ class DAQApp(tk.Tk):
             with open(CAL_FILE) as f:
                 data = json.load(f)
 
-            for i, v in enumerate(data.get("9320_scale", [])):
-                if i < len(self._cal_9320_scale):
-                    self._cal_9320_scale[i].set(str(v))
-            for i, v in enumerate(data.get("9320_offset", [])):
-                if i < len(self._cal_9320_offset):
-                    self._cal_9320_offset[i].set(str(v))
-            for i, v in enumerate(data.get("9223_scale", [])):
-                if i < len(self._cal_9223_scale):
-                    self._cal_9223_scale[i].set(str(v))
-            for i, v in enumerate(data.get("9223_offset", [])):
-                if i < len(self._cal_9223_offset):
-                    self._cal_9223_offset[i].set(str(v))
+            for rec in data.get("NI_9320_modules_2_to_6", []):
+                idx = (rec["module"] - 2) * 16 + rec["channel"]
+                if 0 <= idx < len(self._cal_9320_scale):
+                    self._cal_9320_scale[idx].set(str(rec["scale"]))
+                    self._cal_9320_offset[idx].set(str(rec["offset"]))
+
+            for rec in data.get("NI_9223_module_7", []):
+                idx = rec["channel"] - 1
+                if 0 <= idx < len(self._cal_9223_scale):
+                    self._cal_9223_scale[idx].set(str(rec["scale"]))
+                    self._cal_9223_offset[idx].set(str(rec["offset"]))
+
         except Exception as e:
             messagebox.showwarning("Calibration Load Error",
                                    f"Could not load calibration from:\n{CAL_FILE}\n\n{e}")
+
 
     def _apply_calibration(self):
         if not self.daq:
@@ -1508,9 +1679,9 @@ class DAQApp(tk.Tk):
             self._log_btn.config(text="Start CSV Capture")
 
     def _open_csv(self):
-        tc_hdrs     = [f"TC_{i+1}_degC" for i in range(TC_CHANNELS)]
-        ai9320_hdrs = [f"AI9320_{i+1}_V" for i in range(AI_9320_TOTAL)]
-        ai9223_hdrs = [f"AI9223_{i+1}_V" for i in range(AI_9223_TOTAL)]
+        tc_hdrs     = [f"TC{i:02d}_{TC_NAMES[i]}_degC"          for i in range(TC_CHANNELS)]
+        ai9320_hdrs = [f"Mod{(i//16)+2}_CH{i%16:02d}_{AI9320_NAMES[i]}_V" for i in range(AI_9320_TOTAL)]
+        ai9223_hdrs = [f"Mod7_CH{i+1}_{AI9223_NAMES[i]}_V"      for i in range(AI_9223_TOTAL)]
 
         self._csv_headers = (
             ["Timestamp", "Module"] + tc_hdrs + ai9320_hdrs + ai9223_hdrs
