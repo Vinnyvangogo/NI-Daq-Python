@@ -27,6 +27,8 @@ import time
 import csv
 import math
 import queue
+import json
+import os
 from datetime import datetime
 from typing import Optional
 
@@ -52,6 +54,10 @@ TC_CHANNELS      = 16          # Module 1
 AI_9320_TOTAL    = 80          # Modules 2-6, 16 ch each
 AI_9223_TOTAL    = 4            # Module 7
 AO_9263_TOTAL    = 4            # Module 8
+
+# Calibration is auto-saved/loaded from a JSON file next to the script
+CAL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "cdaq_calibration.json")
 
 # Colours
 C_BG     = "#0d1117"
@@ -714,6 +720,7 @@ class DAQApp(tk.Tk):
 
         self._build_style()
         self._build_ui()
+        self._load_calibration()   # restore saved cal values into the UI fields
 
         # In simulation mode, auto-connect and auto-start so demo data
         # is visible immediately without requiring the Connect button.
@@ -1410,6 +1417,45 @@ class DAQApp(tk.Tk):
     # ══════════════════════════════════════════════════════════════════
     #  Calibration apply
     # ══════════════════════════════════════════════════════════════════
+    def _save_calibration(self):
+        """Save all calibration values to cdaq_calibration.json next to the script."""
+        data = {
+            "9320_scale":  [v.get() for v in self._cal_9320_scale],
+            "9320_offset": [v.get() for v in self._cal_9320_offset],
+            "9223_scale":  [v.get() for v in self._cal_9223_scale],
+            "9223_offset": [v.get() for v in self._cal_9223_offset],
+        }
+        try:
+            with open(CAL_FILE, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            messagebox.showwarning("Calibration Save Error",
+                                   f"Could not save calibration to:\n{CAL_FILE}\n\n{e}")
+
+    def _load_calibration(self):
+        """Load calibration values from cdaq_calibration.json if it exists."""
+        if not os.path.exists(CAL_FILE):
+            return   # first run, nothing to load
+        try:
+            with open(CAL_FILE) as f:
+                data = json.load(f)
+
+            for i, v in enumerate(data.get("9320_scale", [])):
+                if i < len(self._cal_9320_scale):
+                    self._cal_9320_scale[i].set(str(v))
+            for i, v in enumerate(data.get("9320_offset", [])):
+                if i < len(self._cal_9320_offset):
+                    self._cal_9320_offset[i].set(str(v))
+            for i, v in enumerate(data.get("9223_scale", [])):
+                if i < len(self._cal_9223_scale):
+                    self._cal_9223_scale[i].set(str(v))
+            for i, v in enumerate(data.get("9223_offset", [])):
+                if i < len(self._cal_9223_offset):
+                    self._cal_9223_offset[i].set(str(v))
+        except Exception as e:
+            messagebox.showwarning("Calibration Load Error",
+                                   f"Could not load calibration from:\n{CAL_FILE}\n\n{e}")
+
     def _apply_calibration(self):
         if not self.daq:
             messagebox.showwarning("Not Connected", "Connect to apply calibration.")
@@ -1434,8 +1480,9 @@ class DAQApp(tk.Tk):
             messagebox.showwarning("Invalid values",
                                    "Could not parse:\n" + "\n".join(errors))
         else:
+            self._save_calibration()
             messagebox.showinfo("Calibration Applied",
-                                "All calibration values updated successfully.")
+                                f"All calibration values applied and saved to:\n{CAL_FILE}")
 
     # ══════════════════════════════════════════════════════════════════
     #  CSV logging
@@ -1601,6 +1648,7 @@ class DAQApp(tk.Tk):
             self.daq.ai9223_running = False
             self.daq.ao_running     = False
             self.daq.logging        = False
+        self._save_calibration()   # persist cal values on exit
         super().destroy()
 
 
