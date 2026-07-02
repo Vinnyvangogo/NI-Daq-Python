@@ -110,18 +110,54 @@ AO_NAMES = [
 # Calibration JSON -- checked in script directory first, then current
 # working directory, so it works regardless of how the script is launched.
 def _find_cal_file():
+    """Locate cdaq_calibration.json using every available path strategy.
+
+    Priority:
+      1. Same directory as the running script (via sys.argv[0]) -- most
+         reliable across all launch methods (double-click, terminal, IDE).
+      2. Same directory as __file__ if defined (works in some IDEs).
+      3. Current working directory -- fallback for interactive use.
+
+    If none of the candidates exists, returns the argv[0]-based path so
+    _save_calibration() writes the new file next to the script.
+    """
+    import sys
     candidates = []
+
+    # Strategy 1: directory of the script being run (always reliable)
     try:
-        candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                        "cdaq_calibration.json"))
+        script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        if script_dir and os.path.isdir(script_dir):
+            candidates.append(os.path.join(script_dir, "cdaq_calibration.json"))
+    except Exception:
+        pass
+
+    # Strategy 2: __file__ attribute (set by some launchers/IDEs)
+    try:
+        file_dir = os.path.dirname(os.path.abspath(__file__))
+        p = os.path.join(file_dir, "cdaq_calibration.json")
+        if p not in candidates:
+            candidates.append(p)
     except NameError:
         pass
-    candidates.append(os.path.join(os.getcwd(), "cdaq_calibration.json"))
+
+    # Strategy 3: current working directory
+    cwd_path = os.path.join(os.getcwd(), "cdaq_calibration.json")
+    if cwd_path not in candidates:
+        candidates.append(cwd_path)
+
+    # Print search paths at startup so any missing-file issue is immediately obvious
+    print("[cDAQ] Searching for cdaq_calibration.json in:")
     for p in candidates:
-        if os.path.exists(p):
+        exists = os.path.exists(p)
+        print(f"  {'FOUND' if exists else 'not found':10s}  {p}")
+        if exists:
             return p
-    # Default to script directory (or cwd) for writing new files
-    return candidates[0] if candidates else "cdaq_calibration.json"
+
+    # None found -- default write location is next to the script
+    default = candidates[0]
+    print(f"[cDAQ] JSON not found -- will create at: {default}")
+    return default
 
 CAL_FILE = _find_cal_file()
 
@@ -487,25 +523,26 @@ class DAQManager:
             while self.ai9320_running:
                 t0 = time.perf_counter()
                 if SIMULATION_MODE:
-                    raw = [5.0 * math.sin(self._sim_t * 0.5 + i * 0.3) +
-                           np.random.randn() * 0.05 for i in range(AI_9320_TOTAL)]
+                    # Simulate a sinusoidal AC signal so RMS has a
+                    # meaningful non-zero value in demo mode.
+                    t_now = time.perf_counter()
+                    raw_rms = [abs(5.0 * math.sin(t_now * 2 * math.pi * 60 + i * 0.3))
+                               * (1 + np.random.randn() * 0.01)
+                               for i in range(AI_9320_TOTAL)]
                 else:
                     try:
                         data = task.read(
                             number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
                             timeout=2.0)
-                        raw = [float(np.mean(np.atleast_1d(ch_data)))
-                               for ch_data in data]
+                        # Compute RMS over the block of raw samples for each
+                        # channel, then apply scale+offset calibration.
+                        # RMS = sqrt(mean(x^2)) over the raw voltage block.
+                        # Calibration is applied to the RMS value:
+                        #   rms_cal = (rms_raw * scale) + offset
+                        raw_rms = [float(np.sqrt(np.mean(np.atleast_1d(ch_data)**2)))
+                                   for ch_data in data]
                     except Exception as e:
                         self.report_error("Modules 2-6 (9320)", str(e))
-                        # Once a read falls behind the live buffer (overflow,
-                        # Error -200279), NI-DAQmx's default read position
-                        # stays where it was -- every subsequent read hits
-                        # the same stale, already-overflowed position and
-                        # fails again forever. Recover by jumping the read
-                        # pointer to the most recent sample so the next
-                        # read starts fresh instead of retrying a position
-                        # that can never succeed.
                         try:
                             task.in_stream.relative_to = ReadRelativeTo.MOST_RECENT_SAMPLE
                             task.in_stream.offset = 0
@@ -516,7 +553,7 @@ class DAQManager:
                         time.sleep(0.2)
                         continue
 
-                cal = [raw[i] * self.cal_9320[i][0] + self.cal_9320[i][1]
+                cal = [raw_rms[i] * self.cal_9320[i][0] + self.cal_9320[i][1]
                        if self.ai9320_enabled[i] else self.ai9320_data[i]
                        for i in range(AI_9320_TOTAL)]
                 self.ai9320_data = cal
@@ -813,6 +850,7 @@ class DAQApp(tk.Tk):
         # is visible immediately without requiring the Connect button.
         if SIMULATION_MODE:
             self._connect(auto=True)
+            self._apply_cal_to_daq()   # push JSON cal values before loops start
             self.daq.start_tc()
             self.daq.start_ai9320()
             self.daq.start_ai9223()
@@ -1071,7 +1109,7 @@ class DAQApp(tk.Tk):
             body.columnconfigure(mod, weight=1)
             body.rowconfigure(0, weight=1)
 
-            tk.Label(col, text=f"Module {mod + 2}", font=FONT_BOLD,
+            tk.Label(col, text=f"Module {mod + 2}  [Vrms]", font=FONT_BOLD,
                      bg=C_BG, fg=C_ACCENT).pack(fill="x", pady=(0, 2))
 
             panel = tk.Frame(col, bg=C_PANEL,
@@ -1365,12 +1403,37 @@ class DAQApp(tk.Tk):
         if ok:
             self._status_lbl.config(text=f"* Connected - {message}", fg=C_GREEN)
             self._sync_ui_to_daq()
+            # Push calibration values from JSON/UI into DAQManager immediately
+            # so acquisition loops use the correct scale+offset from the first
+            # sample, without needing the user to click Apply All.
+            self._apply_cal_to_daq()
         else:
             self._status_lbl.config(text="* Connection failed", fg=C_RED)
             self.error_queue.put((datetime.now(), "Connection", message))
             messagebox.showerror("Connection Failed", message)
-            # Keep self.daq set so the user can still see why it failed,
-            # but treat as not usable for acquisition.
+
+    def _apply_cal_to_daq(self):
+        """Push current UI calibration StringVars into DAQManager.cal_9320
+        and cal_9223 so the running acquisition loops immediately use the
+        correct scale and offset values. Called automatically on connect
+        and on Apply All, so calibration is always live without a manual step.
+        """
+        if not self.daq:
+            return
+        for i in range(AI_9320_TOTAL):
+            try:
+                s = float(self._cal_9320_scale[i].get())
+                o = float(self._cal_9320_offset[i].get())
+                self.daq.cal_9320[i] = (s, o)
+            except (ValueError, tk.TclError):
+                pass
+        for i in range(AI_9223_TOTAL):
+            try:
+                s = float(self._cal_9223_scale[i].get())
+                o = float(self._cal_9223_offset[i].get())
+                self.daq.cal_9223[i] = (s, o)
+            except (ValueError, tk.TclError):
+                pass
 
     def _sync_ui_to_daq(self):
         if not self.daq:
@@ -1701,26 +1764,26 @@ class DAQApp(tk.Tk):
         if not self.daq:
             messagebox.showwarning("Not Connected", "Connect to apply calibration.")
             return
+        # Validate all entries first before touching the DAQManager
         errors = []
         for i in range(AI_9320_TOTAL):
             try:
-                s = float(self._cal_9320_scale[i].get())
-                o = float(self._cal_9320_offset[i].get())
-                self.daq.cal_9320[i] = (s, o)
-            except ValueError:
-                errors.append(f"9320 AI{i+1}")
+                float(self._cal_9320_scale[i].get())
+                float(self._cal_9320_offset[i].get())
+            except (ValueError, tk.TclError):
+                errors.append(f"9320 CH{i+1}")
         for i in range(AI_9223_TOTAL):
             try:
-                s = float(self._cal_9223_scale[i].get())
-                o = float(self._cal_9223_offset[i].get())
-                self.daq.cal_9223[i] = (s, o)
-            except ValueError:
-                errors.append(f"9223 AI{i+1}")
+                float(self._cal_9223_scale[i].get())
+                float(self._cal_9223_offset[i].get())
+            except (ValueError, tk.TclError):
+                errors.append(f"9223 CH{i+1}")
 
         if errors:
             messagebox.showwarning("Invalid values",
                                    "Could not parse:\n" + "\n".join(errors))
         else:
+            self._apply_cal_to_daq()
             self._save_calibration()
             messagebox.showinfo("Calibration Applied",
                                 f"All calibration values applied and saved to:\n{CAL_FILE}")
@@ -1870,7 +1933,7 @@ class DAQApp(tk.Tk):
 
             for i, var in enumerate(self._ai9320_vars):
                 if self.daq.ai9320_enabled[i]:
-                    var.set(f"{self.daq.ai9320_data[i]:+8.4f}")
+                    var.set(f"{self.daq.ai9320_data[i]:8.3f}")
 
             for i, var in enumerate(self._ai9223_vars):
                 if self.daq.ai9223_enabled[i]:

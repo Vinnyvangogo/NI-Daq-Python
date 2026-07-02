@@ -1,7 +1,7 @@
 {
-  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-02 11:48:06",
-  "chassis_name": "cDAQ9189-24E8D67",
-  "ip_address": "169.254.32.5",
+  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-02 12:41:55",
+  "chassis_name": "cDAQ9189-24D756B",
+  "ip_address": "169.254.134.103",
   "module_config": {
     "module_1_TC_9213": {
       "hw_sample_rate_hz": 75,
@@ -138,8 +138,8 @@
       "module": 2,
       "channel": 0,
       "name": "M1ACIN_PHA_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "44.1045587896",
+      "offset": "-0.145545044006"
     },
     {
       "module": 2,
