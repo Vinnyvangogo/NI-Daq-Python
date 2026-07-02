@@ -12,7 +12,8 @@
     "modules_2_to_6_AI_9320": {
       "hw_sample_rate_hz": 3200,
       "capture_rate_hz": 250,
-      "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth."
+      "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth. csv_capture_rate_hz controls how many RMS rows/sec are written to CSV (must be <= hw_sample_rate_hz). Display updates at 20 Hz regardless.",
+      "csv_capture_rate_hz": 250
     },
     "module_7_AI_9223": {
       "hw_sample_rate_hz": 20000,

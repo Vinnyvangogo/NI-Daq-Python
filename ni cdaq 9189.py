@@ -251,6 +251,7 @@ class DAQManager:
         self.tc_cap_rate     = 1
         self.ai9320_hw_rate  = 2000
         self.ai9320_cap_rate = 1000
+        self.ai9320_csv_rate = 20    # CSV rows/sec (controls log_queue put rate)
         self.ai9223_hw_rate  = 20000
         self.ai9223_cap_rate = 10000
 
@@ -486,7 +487,12 @@ class DAQManager:
         target_rate = self.ai9320_cap_rate
         acq_rate    = max(self.ai9320_hw_rate, target_rate)
         avg_factor  = max(1, acq_rate // max(1, target_rate))
-        block_ms    = 50                           # read cadence
+
+        # CSV capture rate -- each loop tick produces one CSV row.
+        # Must be <= acq_rate. The display (poll loop) refreshes at 20 Hz
+        # independently; we just update self.ai9320_data every tick.
+        csv_rate    = max(1, min(self.ai9320_csv_rate, acq_rate))
+        block_ms    = 1000.0 / csv_rate
         interval    = block_ms / 1000.0
         n_samples   = max(avg_factor, int(acq_rate * interval))
 
@@ -843,6 +849,7 @@ class DAQApp(tk.Tk):
         self._cfg_tc_cap_rate   = 1
         self._cfg_9320_hw_rate  = 2000
         self._cfg_9320_cap_rate = 1000
+        self._cfg_9320_csv_rate = 20    # CSV rows/sec for 9320 (default 20)
         self._cfg_9223_hw_rate  = 20000
         self._cfg_9223_cap_rate = 10000
 
@@ -1097,7 +1104,7 @@ class DAQApp(tk.Tk):
         ttk.Button(ctrl, text="Stop", style="R.TButton",
                    command=self._stop_ai9320).pack(side="left")
 
-        tk.Label(ctrl, text=f"  HW: {self._cfg_9320_hw_rate:,} S/s  |  Capture: {self._cfg_9320_cap_rate:,} S/s  (9320)",
+        tk.Label(ctrl, text=f"  HW: {self._cfg_9320_hw_rate:,} S/s  |  Display: {self._cfg_9320_cap_rate:,} S/s  |  CSV: {self._cfg_9320_csv_rate:,} rows/s  (9320)",
                  font=FONT_TINY, bg=C_BG, fg=C_MUTED).pack(side="left", padx=10)
 
         ttk.Button(ctrl, text="Enable All", style="A.TButton",
@@ -1514,6 +1521,7 @@ class DAQApp(tk.Tk):
             return
         self.daq.ai9320_hw_rate  = self._cfg_9320_hw_rate
         self.daq.ai9320_cap_rate = self._cfg_9320_cap_rate
+        self.daq.ai9320_csv_rate = self._cfg_9320_csv_rate
         self.daq.start_ai9320()
         self._ai9320_status.config(text="* Running", fg=C_GREEN)
 
@@ -1680,9 +1688,10 @@ class DAQApp(tk.Tk):
                     "_note": "9213 thermocouple. hw_sample_rate_hz must be >= capture_rate_hz."
                 },
                 "modules_2_to_6_AI_9320": {
-                    "hw_sample_rate_hz":  self._cfg_9320_hw_rate,
-                    "capture_rate_hz":    self._cfg_9320_cap_rate,
-                    "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth."
+                    "hw_sample_rate_hz":    self._cfg_9320_hw_rate,
+                    "capture_rate_hz":      self._cfg_9320_cap_rate,
+                    "csv_capture_rate_hz":  self._cfg_9320_csv_rate,
+                    "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth. csv_capture_rate_hz controls CSV rows/sec (must be <= hw_sample_rate_hz)."
                 },
                 "module_7_AI_9223": {
                     "hw_sample_rate_hz":  self._cfg_9223_hw_rate,
@@ -1772,6 +1781,8 @@ class DAQApp(tk.Tk):
             ai_cfg = mc.get("modules_2_to_6_AI_9320", {})
             self._cfg_9320_hw_rate  = int(ai_cfg.get("hw_sample_rate_hz", 2000))
             self._cfg_9320_cap_rate = int(ai_cfg.get("capture_rate_hz",   1000))
+            self._cfg_9320_csv_rate = int(ai_cfg.get("csv_capture_rate_hz",
+                                           self._cfg_9320_cap_rate))
 
             hi_cfg = mc.get("module_7_AI_9223", {})
             self._cfg_9223_hw_rate  = int(hi_cfg.get("hw_sample_rate_hz", 20000))
