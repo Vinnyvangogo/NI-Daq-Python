@@ -831,8 +831,13 @@ class DAQApp(tk.Tk):
         self._log_writer = None
         self._log_fh = None
         # Pre-populated from JSON by _load_names_from_json before _build_ui
-        self._json_chassis = "cDAQ9189-XXXXXXX"
-        self._json_ip      = "192.168.1.100"
+        self._json_chassis    = "cDAQ9189-XXXXXXX"
+        self._json_ip         = "192.168.1.100"
+        self._json_auto_start = False   # set to true via JSON "auto_start_on_connect"
+        # Per-channel enable states loaded from JSON before UI is built
+        self._json_tc_enabled   = [True] * TC_CHANNELS
+        self._json_9320_enabled = [True] * AI_9320_TOTAL
+        self._json_9223_enabled = [True] * AI_9223_TOTAL
         # Module sample rates (defaults match hardcoded loop values)
         self._cfg_tc_hw_rate    = 2
         self._cfg_tc_cap_rate   = 1
@@ -857,6 +862,14 @@ class DAQApp(tk.Tk):
             self._tc_status.config(text="* Running", fg=C_GREEN)
             self._ai9320_status.config(text="* Running", fg=C_GREEN)
             self._ai9223_status.config(text="* Running", fg=C_GREEN)
+
+        elif self._json_auto_start:
+            # Hardware mode auto-start: trigger Connect immediately so the
+            # background connection test runs, then _on_connect_result fires
+            # and starts all modules once the test passes.
+            # Use self.after() so the Tk mainloop is running before we
+            # attempt the connection (avoids blocking the UI on startup).
+            self.after(200, self._connect)
 
         self._poll()
         self._poll_errors()
@@ -1056,7 +1069,7 @@ class DAQApp(tk.Tk):
             grid.columnconfigure(c, weight=1)
             grid.rowconfigure(r, weight=1)
 
-            chk_var = tk.BooleanVar(value=True)
+            chk_var = tk.BooleanVar(value=self._json_tc_enabled[i])
             self._tc_checks.append(chk_var)
             ttk.Checkbutton(cell, text=f"TC{i:02d} · {TC_NAMES[i]}", variable=chk_var,
                             style="Panel.TCheckbutton",
@@ -1121,7 +1134,7 @@ class DAQApp(tk.Tk):
                 row = tk.Frame(panel, bg=C_PANEL)
                 row.pack(fill="x", padx=4, pady=1)
 
-                chk_var = tk.BooleanVar(value=True)
+                chk_var = tk.BooleanVar(value=self._json_9320_enabled[idx])
                 self._ai9320_checks.append(chk_var)
                 ttk.Checkbutton(row, variable=chk_var, text=f"{ch:02d}",
                                 style="Panel.TCheckbutton", width=3,
@@ -1178,7 +1191,7 @@ class DAQApp(tk.Tk):
             grid.columnconfigure(i, weight=1)
             grid.rowconfigure(0, weight=1)
 
-            chk_var = tk.BooleanVar(value=True)
+            chk_var = tk.BooleanVar(value=self._json_9223_enabled[i])
             self._ai9223_checks.append(chk_var)
             ttk.Checkbutton(cell, text=f"CH{i+1}", variable=chk_var,
                             style="Panel.TCheckbutton",
@@ -1407,10 +1420,33 @@ class DAQApp(tk.Tk):
             # so acquisition loops use the correct scale+offset from the first
             # sample, without needing the user to click Apply All.
             self._apply_cal_to_daq()
+
+            # Auto-start all modules if "auto_start_on_connect": true in JSON.
+            # Cal is already applied above, so the first sample is correct.
+            if self._json_auto_start:
+                self._auto_start_all_modules()
         else:
             self._status_lbl.config(text="* Connection failed", fg=C_RED)
             self.error_queue.put((datetime.now(), "Connection", message))
             messagebox.showerror("Connection Failed", message)
+
+    def _auto_start_all_modules(self):
+        """Start TC, AI 9320, AI 9223, and AO modules automatically.
+        Called after a successful connect when auto_start_on_connect is
+        true in the JSON. Runs on the UI thread since _on_connect_result
+        is already dispatched via self.after(0, ...).
+        """
+        self._start_tc()
+        self._start_ai9320()
+        self._start_ai9223()
+        # Update status labels to show auto-start triggered from JSON
+        self._tc_status.config(   text="* Running (auto)", fg=C_GREEN)
+        self._ai9320_status.config(text="* Running (auto)", fg=C_GREEN)
+        self._ai9223_status.config(text="* Running (auto)", fg=C_GREEN)
+        self.error_queue.put((
+            datetime.now(), "Auto-Start",
+            "All modules started automatically (auto_start_on_connect=true in JSON)."
+        ))
 
     def _apply_cal_to_daq(self):
         """Push current UI calibration StringVars into DAQManager.cal_9320
@@ -1589,6 +1625,7 @@ class DAQApp(tk.Tk):
                 "module":  1,
                 "channel": i,
                 "name":    TC_NAMES[i],
+                "enabled": self._tc_checks[i].get() if i < len(self._tc_checks) else True,
                 "scale":   1.0,
                 "offset":  0.0,
             })
@@ -1601,6 +1638,7 @@ class DAQApp(tk.Tk):
                 "module":  mod,
                 "channel": ch,
                 "name":    AI9320_NAMES[i],
+                "enabled": self._ai9320_checks[i].get() if i < len(self._ai9320_checks) else True,
                 "scale":   self._cal_9320_scale[i].get(),
                 "offset":  self._cal_9320_offset[i].get(),
             })
@@ -1611,6 +1649,7 @@ class DAQApp(tk.Tk):
                 "module":  7,
                 "channel": i + 1,
                 "name":    AI9223_NAMES[i],
+                "enabled": self._ai9223_checks[i].get() if i < len(self._ai9223_checks) else True,
                 "scale":   self._cal_9223_scale[i].get(),
                 "offset":  self._cal_9223_offset[i].get(),
             })
@@ -1631,8 +1670,9 @@ class DAQApp(tk.Tk):
                 "or click Apply All on the Calibration tab to load them. "
                 f"Saved: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             ),
-            "chassis_name": self._device_var.get().strip(),
-            "ip_address":   self._ip_var.get().strip(),
+            "chassis_name":           self._device_var.get().strip(),
+            "ip_address":             self._ip_var.get().strip(),
+            "auto_start_on_connect":  self._json_auto_start,
             "module_config": {
                 "module_1_TC_9213": {
                     "hw_sample_rate_hz":  self._cfg_tc_hw_rate,
@@ -1684,18 +1724,24 @@ class DAQApp(tk.Tk):
 
             for rec in data.get("NI_9213_module_1_thermocouples", []):
                 ch = rec.get("channel", -1)
-                if 0 <= ch < len(TC_NAMES) and rec.get("name"):
-                    TC_NAMES[ch] = rec["name"]
+                if 0 <= ch < len(TC_NAMES):
+                    if rec.get("name"):
+                        TC_NAMES[ch] = rec["name"]
+                    self._json_tc_enabled[ch] = bool(rec.get("enabled", True))
 
             for rec in data.get("NI_9320_modules_2_to_6", []):
                 idx = (rec.get("module", 2) - 2) * 16 + rec.get("channel", 0)
-                if 0 <= idx < len(AI9320_NAMES) and rec.get("name"):
-                    AI9320_NAMES[idx] = rec["name"]
+                if 0 <= idx < len(AI9320_NAMES):
+                    if rec.get("name"):
+                        AI9320_NAMES[idx] = rec["name"]
+                    self._json_9320_enabled[idx] = bool(rec.get("enabled", True))
 
             for rec in data.get("NI_9223_module_7", []):
                 idx = rec.get("channel", 1) - 1
-                if 0 <= idx < len(AI9223_NAMES) and rec.get("name"):
-                    AI9223_NAMES[idx] = rec["name"]
+                if 0 <= idx < len(AI9223_NAMES):
+                    if rec.get("name"):
+                        AI9223_NAMES[idx] = rec["name"]
+                    self._json_9223_enabled[idx] = bool(rec.get("enabled", True))
 
             for rec in data.get("NI_9263_module_8_ao_reference", []):
                 ch = rec.get("channel", -1)
@@ -1710,6 +1756,10 @@ class DAQApp(tk.Tk):
                 self._json_chassis = data["chassis_name"]
             if data.get("ip_address"):
                 self._json_ip = data["ip_address"]
+
+            # auto_start_on_connect: if true, the app automatically connects
+            # and starts all modules after the JSON cal is applied on startup.
+            self._json_auto_start = bool(data.get("auto_start_on_connect", False))
 
             # Module sample rates -- stored as instance attrs so both the
             # acquisition loops and the tab info labels can read them.

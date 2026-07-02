@@ -1,7 +1,8 @@
 {
-  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-02 12:41:55",
+  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-02 13:52:11",
   "chassis_name": "cDAQ9189-24D756B",
   "ip_address": "169.254.134.103",
+  "auto_start_on_connect": true,
   "module_config": {
     "module_1_TC_9213": {
       "hw_sample_rate_hz": 75,
@@ -25,112 +26,128 @@
       "channel": 0,
       "name": "MCU1_Pos1",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 1,
       "name": "MCU1_Pos2",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 2,
       "name": "MCU1_Pos3",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 3,
       "name": "MCU1_Pos4",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 4,
       "name": "MCU1_Pos5",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 5,
       "name": "MCU1_Pos6",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 6,
       "name": "MCU2_Pos1",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 7,
       "name": "MCU2_Pos2",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 8,
       "name": "MCU2_Pos3",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 9,
       "name": "MCU2_Pos4",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 10,
       "name": "MCU2_Pos5",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 11,
       "name": "MCU2_Pos6",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": true
     },
     {
       "module": 1,
       "channel": 12,
       "name": "SPARE",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": false
     },
     {
       "module": 1,
       "channel": 13,
       "name": "SPARE",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": false
     },
     {
       "module": 1,
       "channel": 14,
       "name": "SPARE",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": false
     },
     {
       "module": 1,
       "channel": 15,
       "name": "SPARE",
       "scale": 1.0,
-      "offset": 0.0
+      "offset": 0.0,
+      "enabled": false
     }
   ],
   "NI_9320_modules_2_to_6": [
@@ -139,560 +156,640 @@
       "channel": 0,
       "name": "M1ACIN_PHA_VSENSE_OUT",
       "scale": "44.1045587896",
-      "offset": "-0.145545044006"
+      "offset": "-0.145545044006",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 1,
       "name": "M1ACIN_PHB_VSENSE_OUT",
       "scale": "44.1934205311",
-      "offset": "-0.106064209275"
+      "offset": "-0.106064209275",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 2,
       "name": "M1ACIN_PHC_VSENSE_OUT",
       "scale": "44.3726906561",
-      "offset": "-0.128680802903"
+      "offset": "-0.128680802903",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 3,
       "name": "EPDU_PHA_VSENSE_OUT",
       "scale": "56.8915703603",
-      "offset": "-0.193431339225"
+      "offset": "-0.193431339225",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 4,
       "name": "EPDU_PHB_VSENSE_OUT",
       "scale": "56.8080499299",
-      "offset": "-0.266997834671"
+      "offset": "-0.266997834671",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 5,
       "name": "EPDU_PHC_VSENSE_OUT",
       "scale": "56.8167352654",
-      "offset": "-0.187495226376"
+      "offset": "-0.187495226376",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 6,
       "name": "M2ACIN_PHA_VSENSE_OUT",
       "scale": "44.2885041872",
-      "offset": "-0.261302174705"
+      "offset": "-0.261302174705",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 7,
       "name": "M2ACIN_PHB_VSENSE_OUT",
       "scale": "44.2548124628",
-      "offset": "-0.203572137329"
+      "offset": "-0.203572137329",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 8,
       "name": "M2ACIN_PHC_VSENSE_OUT",
       "scale": "44.269454738",
-      "offset": "-0.159370037057"
+      "offset": "-0.159370037057",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 9,
       "name": "LAA_PHA_VSENSE_OUT",
       "scale": "56.7285677945",
-      "offset": "-0.136148562707"
+      "offset": "-0.136148562707",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 10,
       "name": "LAA_PHB_VSENSE_OUT",
       "scale": "56.529637923",
-      "offset": "-0.175241877561"
+      "offset": "-0.175241877561",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 11,
       "name": "LAA_PHC_VSENSE_OUT",
       "scale": "56.9126486763",
-      "offset": "-0.244724389308"
+      "offset": "-0.244724389308",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 12,
       "name": "LOA_PHA_VSENSE_OUT",
       "scale": "56.7743030509",
-      "offset": "-0.187355200068"
+      "offset": "-0.187355200068",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 13,
       "name": "LOA_PHB_VSENSE_OUT",
       "scale": "56.7270567271",
-      "offset": "-0.175853875854"
+      "offset": "-0.175853875854",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 14,
       "name": "LOA_PHC_VSENSE_OUT",
       "scale": "56.9119523607",
-      "offset": "-0.284559761803"
+      "offset": "-0.284559761803",
+      "enabled": true
     },
     {
       "module": 2,
       "channel": 15,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 3,
       "channel": 0,
       "name": "M1ACIN_PHA_ISENSE",
       "scale": "2.13392514191",
-      "offset": "-0.00149374759933"
+      "offset": "-0.00149374759933",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 1,
       "name": "M1ACIN_PHB_ISENSE",
       "scale": "2.13095424131",
-      "offset": "-0.00191785881718"
+      "offset": "-0.00191785881718",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 2,
       "name": "M1ACIN_PHC_ISENSE",
       "scale": "2.13690433792",
-      "offset": "-0.00106845216896"
+      "offset": "-0.00106845216896",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 3,
       "name": "EPDU_PHA_ISENSE",
       "scale": "4.28602043003",
-      "offset": "-0.00214301021502"
+      "offset": "-0.00214301021502",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 4,
       "name": "EPDU_PHB_ISENSE",
       "scale": "4.27990584207",
-      "offset": "-0.00213995292104"
+      "offset": "-0.00213995292104",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 5,
       "name": "EPDU_PHC_ISENSE",
       "scale": "4.27990584207",
-      "offset": "-0.00213995292104"
+      "offset": "-0.00213995292104",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 6,
       "name": "M2ACIN_PHA_ISENSE",
       "scale": "1.26722062311",
-      "offset": "-0.00139394268542"
+      "offset": "-0.00139394268542",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 7,
       "name": "M2ACIN_PHB_ISENSE",
       "scale": "1.26653277606",
-      "offset": "-0.00139318605366"
+      "offset": "-0.00139318605366",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 8,
       "name": "M2ACIN_PHC_ISENSE",
       "scale": "1.2525274214",
-      "offset": "-0.00162828564783"
+      "offset": "-0.00162828564783",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 9,
       "name": "LAA_PHA_ISENSE",
       "scale": "1.2679092177",
-      "offset": "-0.00101432737416"
+      "offset": "-0.00101432737416",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 10,
       "name": "LAA_PHB_ISENSE",
       "scale": "1.27383125982",
-      "offset": "-0.00101906500786"
+      "offset": "-0.00101906500786",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 11,
       "name": "LAA_PHC_ISENSE",
       "scale": "1.26074257738",
-      "offset": "-0.00113466831964"
+      "offset": "-0.00113466831964",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 12,
       "name": "LOA_PHA_ISENSE",
       "scale": "1.25675505844",
-      "offset": "-0.000754053035063"
+      "offset": "-0.000754053035063",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 13,
       "name": "LOA_PHB_ISENSE",
       "scale": "1.24968757811",
-      "offset": "-0.000749812546863"
+      "offset": "-0.000749812546863",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 14,
       "name": "LOA_PHC_ISENSE",
       "scale": "1.26087504728",
-      "offset": "-0.00100870003783"
+      "offset": "-0.00100870003783",
+      "enabled": true
     },
     {
       "module": 3,
       "channel": 15,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 0,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 1,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 2,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 3,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 4,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 5,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 6,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 7,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 8,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 9,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 10,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 11,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 12,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 13,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 14,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 4,
       "channel": 15,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 0,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 1,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 2,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 3,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 4,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 5,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 6,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 7,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 8,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 9,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 10,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 11,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 12,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 13,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 14,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 5,
       "channel": 15,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 0,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 1,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 2,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 3,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 4,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 5,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 6,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 7,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 8,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 9,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 10,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 11,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 12,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 13,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 14,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     },
     {
       "module": 6,
       "channel": 15,
       "name": "SPARE",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": false
     }
   ],
   "NI_9223_module_7": [
@@ -701,28 +798,32 @@
       "channel": 1,
       "name": "A429_DSCS_TX_A",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": true
     },
     {
       "module": 7,
       "channel": 2,
       "name": "A429_DSCS_RX_A",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": true
     },
     {
       "module": 7,
       "channel": 3,
       "name": "A429_MCU2_TX_A",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": true
     },
     {
       "module": 7,
       "channel": 4,
       "name": "A429_MCU2_RX_A",
       "scale": "1.0",
-      "offset": "0.0"
+      "offset": "0.0",
+      "enabled": true
     }
   ],
   "NI_9263_module_8_ao_reference": [
