@@ -1,7 +1,24 @@
 {
-  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-01 17:04:57",
-  "chassis_name": "cDAQ9189-1234abc",
-  "ip_address": "192.168.100.100",
+  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-02 10:03:06",
+  "chassis_name": "cDAQ9189-24E8D67",
+  "ip_address": "169.254.32.5",
+  "module_config": {
+    "module_1_TC_9213": {
+      "hw_sample_rate_hz": 75,
+      "capture_rate_hz": 1,
+      "_note": "9213 thermocouple. hw_sample_rate_hz must be >= capture_rate_hz."
+    },
+    "modules_2_to_6_AI_9320": {
+      "hw_sample_rate_hz": 2000,
+      "capture_rate_hz": 1000,
+      "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth."
+    },
+    "module_7_AI_9223": {
+      "hw_sample_rate_hz": 20000,
+      "capture_rate_hz": 10000,
+      "_note": "9223 high-speed analog input. Must be >= capture_rate_hz."
+    }
+  },
   "NI_9213_module_1_thermocouples": [
     {
       "module": 1,
@@ -121,106 +138,106 @@
       "module": 2,
       "channel": 0,
       "name": "M1ACIN_PHA_VSENSE_OUT",
-      "scale": "123.0",
-      "offset": "0.0"
+      "scale": "44.1045587896",
+      "offset": "-0.145545044006"
     },
     {
       "module": 2,
       "channel": 1,
       "name": "M1ACIN_PHB_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "44.1934205311",
+      "offset": "-0.106064209275"
     },
     {
       "module": 2,
       "channel": 2,
       "name": "M1ACIN_PHC_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "44.3726906561",
+      "offset": "-0.128680802903"
     },
     {
       "module": 2,
       "channel": 3,
       "name": "EPDU_PHA_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.8915703603",
+      "offset": "-0.193431339225"
     },
     {
       "module": 2,
       "channel": 4,
       "name": "EPDU_PHB_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.8080499299",
+      "offset": "-0.266997834671"
     },
     {
       "module": 2,
       "channel": 5,
       "name": "EPDU_PHC_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.8167352654",
+      "offset": "-0.187495226376"
     },
     {
       "module": 2,
       "channel": 6,
       "name": "M2ACIN_PHA_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "44.2885041872",
+      "offset": "-0.261302174705"
     },
     {
       "module": 2,
       "channel": 7,
       "name": "M2ACIN_PHB_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "44.2548124628",
+      "offset": "-0.203572137329"
     },
     {
       "module": 2,
       "channel": 8,
       "name": "M2ACIN_PHC_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "44.269454738",
+      "offset": "-0.159370037057"
     },
     {
       "module": 2,
       "channel": 9,
       "name": "LAA_PHA_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.7285677945",
+      "offset": "-0.136148562707"
     },
     {
       "module": 2,
       "channel": 10,
       "name": "LAA_PHB_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.529637923",
+      "offset": "-0.175241877561"
     },
     {
       "module": 2,
       "channel": 11,
       "name": "LAA_PHC_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.9126486763",
+      "offset": "-0.244724389308"
     },
     {
       "module": 2,
       "channel": 12,
       "name": "LOA_PHA_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.7743030509",
+      "offset": "-0.187355200068"
     },
     {
       "module": 2,
       "channel": 13,
       "name": "LOA_PHB_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.7270567271",
+      "offset": "-0.175853875854"
     },
     {
       "module": 2,
       "channel": 14,
       "name": "LOA_PHC_VSENSE_OUT",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "56.9119523607",
+      "offset": "-0.284559761803"
     },
     {
       "module": 2,
@@ -233,106 +250,106 @@
       "module": 3,
       "channel": 0,
       "name": "M1ACIN_PHA_ISENSE",
-      "scale": "321.0",
-      "offset": "0.0"
+      "scale": "2.13392514191",
+      "offset": "-0.00149374759933"
     },
     {
       "module": 3,
       "channel": 1,
       "name": "M1ACIN_PHB_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "2.13095424131",
+      "offset": "-0.00191785881718"
     },
     {
       "module": 3,
       "channel": 2,
       "name": "M1ACIN_PHC_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "2.13690433792",
+      "offset": "-0.00106845216896"
     },
     {
       "module": 3,
       "channel": 3,
       "name": "EPDU_PHA_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "4.28602043003",
+      "offset": "-0.00214301021502"
     },
     {
       "module": 3,
       "channel": 4,
       "name": "EPDU_PHB_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "4.27990584207",
+      "offset": "-0.00213995292104"
     },
     {
       "module": 3,
       "channel": 5,
       "name": "EPDU_PHC_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "4.27990584207",
+      "offset": "-0.00213995292104"
     },
     {
       "module": 3,
       "channel": 6,
       "name": "M2ACIN_PHA_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.26722062311",
+      "offset": "-0.00139394268542"
     },
     {
       "module": 3,
       "channel": 7,
       "name": "M2ACIN_PHB_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.26653277606",
+      "offset": "-0.00139318605366"
     },
     {
       "module": 3,
       "channel": 8,
       "name": "M2ACIN_PHC_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.2525274214",
+      "offset": "-0.00162828564783"
     },
     {
       "module": 3,
       "channel": 9,
       "name": "LAA_PHA_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.2679092177",
+      "offset": "-0.00101432737416"
     },
     {
       "module": 3,
       "channel": 10,
       "name": "LAA_PHB_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.27383125982",
+      "offset": "-0.00101906500786"
     },
     {
       "module": 3,
       "channel": 11,
       "name": "LAA_PHC_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.26074257738",
+      "offset": "-0.00113466831964"
     },
     {
       "module": 3,
       "channel": 12,
       "name": "LOA_PHA_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.25675505844",
+      "offset": "-0.000754053035063"
     },
     {
       "module": 3,
       "channel": 13,
       "name": "LOA_PHB_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.24968757811",
+      "offset": "-0.000749812546863"
     },
     {
       "module": 3,
       "channel": 14,
       "name": "LOA_PHC_ISENSE",
-      "scale": "1.0",
-      "offset": "0.0"
+      "scale": "1.26087504728",
+      "offset": "-0.00100870003783"
     },
     {
       "module": 3,

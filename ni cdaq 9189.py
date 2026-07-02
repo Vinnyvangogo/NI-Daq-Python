@@ -209,6 +209,15 @@ class DAQManager:
         # simulation phase accumulators (so demo data moves smoothly)
         self._sim_t = 0.0
 
+        # Configurable acquisition rates -- overwritten by DAQApp from JSON
+        # before each start_* call so loops use whatever is in the JSON.
+        self.tc_hw_rate      = 2
+        self.tc_cap_rate     = 1
+        self.ai9320_hw_rate  = 2000
+        self.ai9320_cap_rate = 1000
+        self.ai9223_hw_rate  = 20000
+        self.ai9223_cap_rate = 10000
+
         # error-throttling state (see report_error)
         self._last_error_time: dict = {}
         self._error_repeat_count: dict = {}
@@ -326,7 +335,8 @@ class DAQManager:
 
     # ── acquisition loops ────────────────────────────────────────────────
     def _tc_loop(self):
-        interval = 1.0          # 1 Hz update for thermocouples
+        acq_rate = max(self.tc_hw_rate, self.tc_cap_rate)
+        interval = 1.0 / max(1, self.tc_cap_rate)
 
         task = None
         if not SIMULATION_MODE:
@@ -340,9 +350,9 @@ class DAQManager:
                         cjc_source=CJCSource.BUILT_IN,
                     )
                 task.timing.cfg_samp_clk_timing(
-                    rate=2.0,
+                    rate=float(acq_rate),
                     sample_mode=AcquisitionType.CONTINUOUS,
-                    samps_per_chan=120,   # 60 seconds of buffer at 2 S/s
+                    samps_per_chan=max(120, acq_rate * 60),  # 60s buffer
                 )
                 task.start()
             except Exception as e:
@@ -437,9 +447,9 @@ class DAQManager:
         one timing engine avoids that conflict and is the NI-recommended
         approach for multi-module synchronized acquisition.
         """
-        target_rate = 1000                        # required capture rate (S/s/ch)
-        acq_rate    = 2000                         # actual hardware rate (S/s/ch)
-        avg_factor  = max(1, acq_rate // target_rate)
+        target_rate = self.ai9320_cap_rate
+        acq_rate    = max(self.ai9320_hw_rate, target_rate)
+        avg_factor  = max(1, acq_rate // max(1, target_rate))
         block_ms    = 50                           # read cadence
         interval    = block_ms / 1000.0
         n_samples   = max(avg_factor, int(acq_rate * interval))
@@ -546,8 +556,8 @@ class DAQManager:
         0.1 ms, since every task.read() is an Ethernet round trip on this
         networked chassis.
         """
-        target_rate = 10_000                      # required capture rate (S/s/ch)
-        acq_rate    = 20_000                       # actual hardware rate (S/s/ch)
+        target_rate = self.ai9223_cap_rate
+        acq_rate    = max(self.ai9223_hw_rate, target_rate)
         avg_factor  = max(1, acq_rate // target_rate)
         block_ms    = 50
         interval    = block_ms / 1000.0
@@ -786,6 +796,13 @@ class DAQApp(tk.Tk):
         # Pre-populated from JSON by _load_names_from_json before _build_ui
         self._json_chassis = "cDAQ9189-XXXXXXX"
         self._json_ip      = "192.168.1.100"
+        # Module sample rates (defaults match hardcoded loop values)
+        self._cfg_tc_hw_rate    = 2
+        self._cfg_tc_cap_rate   = 1
+        self._cfg_9320_hw_rate  = 2000
+        self._cfg_9320_cap_rate = 1000
+        self._cfg_9223_hw_rate  = 20000
+        self._cfg_9223_cap_rate = 10000
 
         self._build_style()
         self._load_names_from_json()   # update name lists from JSON before UI is built
@@ -972,7 +989,7 @@ class DAQApp(tk.Tk):
                                        command=self._stop_tc)
         self._tc_stop_btn.pack(side="left")
 
-        tk.Label(ctrl, text="  1 S/s (9213 hardware limit)",
+        tk.Label(ctrl, text=f"  HW: {self._cfg_tc_hw_rate} S/s  |  Capture: {self._cfg_tc_cap_rate} S/s  (9213)",
                  font=FONT_TINY, bg=C_BG, fg=C_MUTED).pack(side="left", padx=10)
 
         ttk.Button(ctrl, text="Enable All", style="A.TButton",
@@ -1029,7 +1046,7 @@ class DAQApp(tk.Tk):
         ttk.Button(ctrl, text="Stop", style="R.TButton",
                    command=self._stop_ai9320).pack(side="left")
 
-        tk.Label(ctrl, text="  200 kS/s hw | 1000 S/s display",
+        tk.Label(ctrl, text=f"  HW: {self._cfg_9320_hw_rate:,} S/s  |  Capture: {self._cfg_9320_cap_rate:,} S/s  (9320)",
                  font=FONT_TINY, bg=C_BG, fg=C_MUTED).pack(side="left", padx=10)
 
         ttk.Button(ctrl, text="Enable All", style="A.TButton",
@@ -1098,7 +1115,7 @@ class DAQApp(tk.Tk):
         ttk.Button(ctrl, text="Stop", style="R.TButton",
                    command=self._stop_ai9223).pack(side="left")
 
-        tk.Label(ctrl, text="  1 MS/s hw | 10000 S/s display",
+        tk.Label(ctrl, text=f"  HW: {self._cfg_9223_hw_rate:,} S/s  |  Capture: {self._cfg_9223_cap_rate:,} S/s  (9223)",
                  font=FONT_TINY, bg=C_BG, fg=C_MUTED).pack(side="left", padx=10)
 
         ttk.Button(ctrl, text="Enable All", style="A.TButton",
@@ -1383,6 +1400,8 @@ class DAQApp(tk.Tk):
     def _start_tc(self):
         if not self._ensure_connected():
             return
+        self.daq.tc_hw_rate    = self._cfg_tc_hw_rate
+        self.daq.tc_cap_rate   = self._cfg_tc_cap_rate
         self.daq.start_tc()
         self._tc_status.config(text="* Running", fg=C_GREEN)
 
@@ -1394,6 +1413,8 @@ class DAQApp(tk.Tk):
     def _start_ai9320(self):
         if not self._ensure_connected():
             return
+        self.daq.ai9320_hw_rate  = self._cfg_9320_hw_rate
+        self.daq.ai9320_cap_rate = self._cfg_9320_cap_rate
         self.daq.start_ai9320()
         self._ai9320_status.config(text="* Running", fg=C_GREEN)
 
@@ -1405,6 +1426,8 @@ class DAQApp(tk.Tk):
     def _start_ai9223(self):
         if not self._ensure_connected():
             return
+        self.daq.ai9223_hw_rate  = self._cfg_9223_hw_rate
+        self.daq.ai9223_cap_rate = self._cfg_9223_cap_rate
         self.daq.start_ai9223()
         self._ai9223_status.config(text="* Running", fg=C_GREEN)
 
@@ -1547,6 +1570,23 @@ class DAQApp(tk.Tk):
             ),
             "chassis_name": self._device_var.get().strip(),
             "ip_address":   self._ip_var.get().strip(),
+            "module_config": {
+                "module_1_TC_9213": {
+                    "hw_sample_rate_hz":  self._cfg_tc_hw_rate,
+                    "capture_rate_hz":    self._cfg_tc_cap_rate,
+                    "_note": "9213 thermocouple. hw_sample_rate_hz must be >= capture_rate_hz."
+                },
+                "modules_2_to_6_AI_9320": {
+                    "hw_sample_rate_hz":  self._cfg_9320_hw_rate,
+                    "capture_rate_hz":    self._cfg_9320_cap_rate,
+                    "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth."
+                },
+                "module_7_AI_9223": {
+                    "hw_sample_rate_hz":  self._cfg_9223_hw_rate,
+                    "capture_rate_hz":    self._cfg_9223_cap_rate,
+                    "_note": "9223 high-speed analog input. Must be >= capture_rate_hz."
+                },
+            },
             "NI_9213_module_1_thermocouples": channels_tc,
             "NI_9320_modules_2_to_6":         channels_9320,
             "NI_9223_module_7":               channels_9223,
@@ -1607,6 +1647,22 @@ class DAQApp(tk.Tk):
                 self._json_chassis = data["chassis_name"]
             if data.get("ip_address"):
                 self._json_ip = data["ip_address"]
+
+            # Module sample rates -- stored as instance attrs so both the
+            # acquisition loops and the tab info labels can read them.
+            mc = data.get("module_config", {})
+
+            tc_cfg = mc.get("module_1_TC_9213", {})
+            self._cfg_tc_hw_rate  = int(tc_cfg.get("hw_sample_rate_hz", 2))
+            self._cfg_tc_cap_rate = int(tc_cfg.get("capture_rate_hz",    1))
+
+            ai_cfg = mc.get("modules_2_to_6_AI_9320", {})
+            self._cfg_9320_hw_rate  = int(ai_cfg.get("hw_sample_rate_hz", 2000))
+            self._cfg_9320_cap_rate = int(ai_cfg.get("capture_rate_hz",   1000))
+
+            hi_cfg = mc.get("module_7_AI_9223", {})
+            self._cfg_9223_hw_rate  = int(hi_cfg.get("hw_sample_rate_hz", 20000))
+            self._cfg_9223_cap_rate = int(hi_cfg.get("capture_rate_hz",   10000))
 
         except Exception as e:
             # Non-fatal — fall back to the hardcoded defaults.
