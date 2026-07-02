@@ -419,7 +419,7 @@ class DAQManager:
                         result = task.read(
                             number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
                             timeout=2.0)
-                        raw = [float(np.mean(np.atleast_1d(ch_data)))
+                        raw = [float(np.nanmean(np.atleast_1d(ch_data)))
                                for ch_data in result]
                     except Exception as e:
                         self.report_error("Module 1 (9213)", str(e))
@@ -545,7 +545,7 @@ class DAQManager:
                         # RMS = sqrt(mean(x^2)) over the raw voltage block.
                         # Calibration is applied to the RMS value:
                         #   rms_cal = (rms_raw * scale) + offset
-                        raw_rms = [float(np.sqrt(np.mean(np.atleast_1d(ch_data)**2)))
+                        raw_rms = [float(np.sqrt(np.nanmean(np.atleast_1d(ch_data)**2)))
                                    for ch_data in data]
                     except Exception as e:
                         self.report_error("Modules 2-6 (9320)", str(e))
@@ -644,7 +644,7 @@ class DAQManager:
                         data = task.read(
                             number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
                             timeout=1.0)
-                        raw = [float(np.mean(np.atleast_1d(ch_data)))
+                        raw = [float(np.nanmean(np.atleast_1d(ch_data)))
                                for ch_data in data]
                     except Exception as e:
                         self.report_error("Module 7 (9223)", str(e))
@@ -840,6 +840,13 @@ class DAQApp(tk.Tk):
         self._json_chassis    = "cDAQ9189-XXXXXXX"
         self._json_ip         = "192.168.1.100"
         self._json_auto_start = False   # set to true via JSON "auto_start_on_connect"
+        # Recording config (loaded from JSON "recording" section)
+        self._rec_auto_start   = False
+        self._rec_prefix       = "cdaq_data"
+        self._rec_timed        = False
+        self._rec_duration_sec = 300.0
+        self._rec_start_delay_sec = 2.0   # seconds to wait after modules start before recording
+        self._rec_start_time: Optional[float] = None
         # Per-channel enable states loaded from JSON before UI is built
         self._json_tc_enabled   = [True] * TC_CHANNELS
         self._json_9320_enabled = [True] * AI_9320_TOTAL
@@ -1438,15 +1445,13 @@ class DAQApp(tk.Tk):
             messagebox.showerror("Connection Failed", message)
 
     def _auto_start_all_modules(self):
-        """Start TC, AI 9320, AI 9223, and AO modules automatically.
+        """Start TC, AI 9320, AI 9223 automatically on connect.
         Called after a successful connect when auto_start_on_connect is
-        true in the JSON. Runs on the UI thread since _on_connect_result
-        is already dispatched via self.after(0, ...).
+        true in the JSON.
         """
         self._start_tc()
         self._start_ai9320()
         self._start_ai9223()
-        # Update status labels to show auto-start triggered from JSON
         self._tc_status.config(   text="* Running (auto)", fg=C_GREEN)
         self._ai9320_status.config(text="* Running (auto)", fg=C_GREEN)
         self._ai9223_status.config(text="* Running (auto)", fg=C_GREEN)
@@ -1454,6 +1459,13 @@ class DAQApp(tk.Tk):
             datetime.now(), "Auto-Start",
             "All modules started automatically (auto_start_on_connect=true in JSON)."
         ))
+        # If auto-recording is enabled, wait before starting so the DAQ
+        # has time to settle and fill its buffer before the first CSV row.
+        # Delay is set by "record_start_delay_sec" in the JSON recording
+        # section (default 2 seconds if not specified).
+        if self._rec_auto_start:
+            delay_ms = max(100, int(self._rec_start_delay_sec * 1000))
+            self.after(delay_ms, self._start_auto_recording)
 
     def _apply_cal_to_daq(self):
         """Push current UI calibration StringVars into DAQManager.cal_9320
@@ -1670,7 +1682,18 @@ class DAQApp(tk.Tk):
                 "name":    AO_NAMES[i],
             })
 
+        # Read existing JSON first so we preserve any fields we don't own
+        # (e.g. "recording") rather than silently dropping them.
+        existing = {}
+        try:
+            if os.path.exists(CAL_FILE):
+                with open(CAL_FILE) as f:
+                    existing = json.load(f)
+        except Exception:
+            pass
+
         data = {
+            **existing,   # keep all existing fields (recording, etc.)
             "_info": (
                 "cDAQ-9189 calibration file. "
                 "Applied as: output = (raw * scale) + offset. "
@@ -1681,6 +1704,22 @@ class DAQApp(tk.Tk):
             "chassis_name":           self._device_var.get().strip(),
             "ip_address":             self._ip_var.get().strip(),
             "auto_start_on_connect":  self._json_auto_start,
+            "recording": {
+                "auto_record_on_start":   self._rec_auto_start,
+                "log_filename_prefix":    self._rec_prefix,
+                "record_start_delay_sec": self._rec_start_delay_sec,
+                "timed_recording":        self._rec_timed,
+                "record_duration_sec":    self._rec_duration_sec,
+                "_note": (
+                    "auto_record_on_start: start CSV automatically once data is on screen. "
+                    "log_filename_prefix: base name for the CSV file (timestamp appended). "
+                    "record_start_delay_sec: seconds to wait after modules start before "
+                    "recording begins (allows DAQ to settle and fill its buffer). "
+                    "timed_recording: if true, stop all acquisition and close CSV after "
+                    "record_duration_sec seconds, then close the app. "
+                    "If false, record_duration_sec is ignored."
+                )
+            },
             "module_config": {
                 "module_1_TC_9213": {
                     "hw_sample_rate_hz":  self._cfg_tc_hw_rate,
@@ -1770,6 +1809,15 @@ class DAQApp(tk.Tk):
             # and starts all modules after the JSON cal is applied on startup.
             self._json_auto_start = bool(data.get("auto_start_on_connect", False))
 
+            # Recording config -- guard against None (can happen if a previous
+            # version of the script saved the field as null/missing).
+            rec = data.get("recording") or {}
+            self._rec_auto_start      = bool(rec.get("auto_record_on_start",   False))
+            self._rec_prefix          = str(rec.get("log_filename_prefix",     "cdaq_data"))
+            self._rec_timed           = bool(rec.get("timed_recording",         False))
+            self._rec_duration_sec    = float(rec.get("record_duration_sec",    300))
+            self._rec_start_delay_sec = float(rec.get("record_start_delay_sec", 2.0))
+
             # Module sample rates -- stored as instance attrs so both the
             # acquisition loops and the tab info labels can read them.
             mc = data.get("module_config", {})
@@ -1852,34 +1900,74 @@ class DAQApp(tk.Tk):
     # ══════════════════════════════════════════════════════════════════
     #  CSV logging
     # ══════════════════════════════════════════════════════════════════
+    def _make_log_path(self) -> str:
+        """Build a timestamped CSV path in the same folder as the script."""
+        import sys
+        try:
+            script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        except Exception:
+            script_dir = os.getcwd()
+        ts   = datetime.now().strftime("%Y%m%d_%H%M%S")
+        name = f"{self._rec_prefix}_{ts}.csv"
+        return os.path.join(script_dir, name)
+
+    def _start_recording(self, path: str):
+        """Open the CSV at *path* and start the writer thread."""
+        self._log_file = path
+        self._open_csv()
+        self.daq.logging = True
+        self._rec_start_time = time.perf_counter()
+        self._log_btn.config(text="■ Stop CSV Capture")
+        threading.Thread(target=self._csv_writer_loop, daemon=True).start()
+
+    def _stop_recording(self):
+        """Signal the writer thread to stop and close the file."""
+        if self.daq:
+            self.daq.logging = False
+        self._rec_start_time = None
+        self._log_btn.config(text="▶ Start CSV Capture")
+
+    def _start_auto_recording(self):
+        """Called after auto-start when auto_record_on_start is true."""
+        if not self.daq:
+            return
+        path = self._make_log_path()
+        self._start_recording(path)
+        self.error_queue.put((
+            datetime.now(), "Auto-Record",
+            f"CSV recording started: {os.path.basename(path)}"
+            + (f"  [timed: {self._rec_duration_sec:.0f}s]" if self._rec_timed else "")
+        ))
+
     def _toggle_log(self):
         if not self._ensure_connected():
             return
         if not self.daq.logging:
+            import sys
+            try:
+                init_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+            except Exception:
+                init_dir = None
             path = filedialog.asksaveasfilename(
                 defaultextension=".csv",
                 filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-                title="Save capture CSV"
+                title="Save capture CSV",
+                initialdir=init_dir,
+                initialfile=os.path.basename(self._make_log_path()),
             )
             if not path:
                 return
-            self._log_file = path
-            self._open_csv()
-            self.daq.logging = True
-            self._log_btn.config(text="Stop CSV Capture")
-            threading.Thread(target=self._csv_writer_loop, daemon=True).start()
+            self._start_recording(path)
         else:
-            self.daq.logging = False
-            self._log_btn.config(text="Start CSV Capture")
+            self._stop_recording()
 
     def _open_csv(self):
-        tc_hdrs     = [f"TC{i:02d}_{TC_NAMES[i]}_degC"          for i in range(TC_CHANNELS)]
-        ai9320_hdrs = [f"Mod{(i//16)+2}_CH{i%16:02d}_{AI9320_NAMES[i]}_V" for i in range(AI_9320_TOTAL)]
-        ai9223_hdrs = [f"Mod7_CH{i+1}_{AI9223_NAMES[i]}_V"      for i in range(AI_9223_TOTAL)]
+        tc_hdrs     = [f"TC{i:02d}_{TC_NAMES[i]}_degC"                        for i in range(TC_CHANNELS)]
+        ai9320_hdrs = [f"Mod{(i//16)+2}_CH{i%16:02d}_{AI9320_NAMES[i]}_Vrms"  for i in range(AI_9320_TOTAL)]
+        ai9223_hdrs = [f"Mod7_CH{i+1}_{AI9223_NAMES[i]}_V"                    for i in range(AI_9223_TOTAL)]
 
-        self._csv_headers = (
-            ["Timestamp", "Module"] + tc_hdrs + ai9320_hdrs + ai9223_hdrs
-        )
+        # Single merged row per timestamp — all modules in every row
+        self._csv_headers = ["Timestamp"] + tc_hdrs + ai9320_hdrs + ai9223_hdrs
 
         self._log_fh = open(self._log_file, "w", newline="")
         self._log_writer = csv.writer(self._log_fh)
@@ -1887,29 +1975,44 @@ class DAQApp(tk.Tk):
         self._log_fh.flush()
 
     def _csv_writer_loop(self):
-        empty_tc   = [""] * TC_CHANNELS
-        empty_9320 = [""] * AI_9320_TOTAL
-        empty_9223 = [""] * AI_9223_TOTAL
+        """Write one merged row per tick directly from daq.*_data arrays.
+
+        Samples all module arrays at a shared timestamp so every row is
+        complete — no empty columns, no NaN from mismatched module rates.
+        """
+        csv_rate = max(1, getattr(self.daq, "ai9320_csv_rate", 20))
+        interval = 1.0 / csv_rate
 
         while self.daq and self.daq.logging:
-            try:
-                tag, ts, data = self.daq.log_queue.get(timeout=0.1)
-            except queue.Empty:
-                continue
+            t0     = time.perf_counter()
+            ts_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
-            ts_str = ts.strftime("%Y-%m-%d %H:%M:%S.%f")
-            if tag == "TC":
-                row = [ts_str, "Module1_9213"] + [f"{v:.4f}" for v in data] + empty_9320 + empty_9223
-            elif tag == "AI9320":
-                row = [ts_str, "Mod2-6_9320"] + empty_tc + [f"{v:.6f}" for v in data] + empty_9223
-            elif tag == "AI9223":
-                row = [ts_str, "Module7_9223"] + empty_tc + empty_9320 + [f"{v:.6f}" for v in data]
-            else:
-                continue
+            tc_vals    = list(self.daq.tc_data)
+            ai9320_vals = list(self.daq.ai9320_data)
+            ai9223_vals = list(self.daq.ai9223_data)
+
+            def fmt(v, precision):
+                """Format float, replacing nan/inf with empty string."""
+                try:
+                    if not np.isfinite(v):
+                        return ""
+                    return f"{v:.{precision}f}"
+                except Exception:
+                    return ""
+
+            row = (
+                [ts_str]
+                + [fmt(v, 4) for v in tc_vals]
+                + [fmt(v, 6) for v in ai9320_vals]
+                + [fmt(v, 6) for v in ai9223_vals]
+            )
 
             if self._log_writer:
                 self._log_writer.writerow(row)
                 self._log_fh.flush()
+
+            elapsed = time.perf_counter() - t0
+            time.sleep(max(0.0, interval - elapsed))
 
         if self._log_fh:
             self._log_fh.close()
@@ -2003,7 +2106,57 @@ class DAQApp(tk.Tk):
             for i, var in enumerate(self._ao_current_vars):
                 var.set(f"{self.daq.ao_data[i]:.4f} V")
 
+            # ── Timed recording timeout ─────────────────────────────
+            if (self._rec_timed
+                    and self._rec_start_time is not None
+                    and self.daq.logging):
+                elapsed   = time.perf_counter() - self._rec_start_time
+                remaining = max(0.0, self._rec_duration_sec - elapsed)
+                # Show countdown on the button label
+                self._log_btn.config(text=f"■ Recording  {remaining:.0f}s left")
+                if elapsed >= self._rec_duration_sec:
+                    self._timed_recording_complete()
+            elif (self.daq.logging
+                  and not self._rec_timed
+                  and self._rec_start_time is not None):
+                # Untimed recording — show elapsed mm:ss
+                elapsed = time.perf_counter() - self._rec_start_time
+                m, s = divmod(int(elapsed), 60)
+                self._log_btn.config(text=f"■ Recording  {m:02d}:{s:02d}")
+
         self.after(50, self._poll)   # 20 Hz
+
+    def _timed_recording_complete(self):
+        """Stop all acquisition, close the CSV, and optionally close the app.
+        Only auto-closes when both auto_record_on_start AND timed_recording
+        are true (fully unattended mode).
+        """
+        duration   = self._rec_duration_sec
+        saved_name = os.path.basename(self._log_file or "unknown")
+
+        self._stop_tc()
+        self._stop_ai9320()
+        self._stop_ai9223()
+        self._stop_ao()
+        self._stop_recording()
+
+        self.error_queue.put((
+            datetime.now(), "Timed Recording",
+            f"Complete after {duration:.0f}s — CSV saved: {saved_name}"
+        ))
+
+        if self._rec_auto_start and self._rec_timed:
+            # Fully unattended mode: close app after 1 s so writer flushes
+            self._status_lbl.config(
+                text=f"* Recording complete ({duration:.0f}s) — closing in 1s...",
+                fg=C_YELLOW
+            )
+            self.after(1000, self.destroy)
+        else:
+            self._status_lbl.config(
+                text=f"* Timed recording complete ({duration:.0f}s) — acquisition stopped",
+                fg=C_YELLOW
+            )
 
     # ── close ────────────────────────────────────────────────────────
     def destroy(self):
@@ -2012,8 +2165,8 @@ class DAQApp(tk.Tk):
             self.daq.ai9320_running = False
             self.daq.ai9223_running = False
             self.daq.ao_running     = False
-            self.daq.logging        = False
-        self._save_calibration()   # persist cal values on exit
+        self._stop_recording()       # closes CSV file cleanly if open
+        self._save_calibration()     # persist cal values on exit
         super().destroy()
 
 
