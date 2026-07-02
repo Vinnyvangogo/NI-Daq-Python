@@ -30,7 +30,7 @@ from nidaqmx.constants import (
 )
 
 # ----------------------------- CONFIG ---------------------------------
-DEVICE = "cDAQ9189Mod2"          # chassis "cDAQ9189", module in slot 2
+DEVICE = "cDAQ9189-24E8D67Mod2"          # chassis "cDAQ9189", module in slot 2
 CHANNELS = f"{DEVICE}/ai0:2"     # channels 0, 1, 2
 NUM_CHANNELS = 3
 
@@ -43,7 +43,7 @@ SLIDE_SAMPLES = 16               # new samples read/processed per update
                                   #    = 51200/16 = 3200 Hz refresh
 
 INPUT_RANGE = 10.0                # +/-10 V, matches NI-9320 range
-DIVIDER_RATIO = 199.0 / 6.0       # scale factor back to true phase-to-phase Vrms
+DIVIDER_RATIO = 199.0 / 4.512       # scale factor back to true phase-to-phase Vrms
                                    # (adjust to your actual measured divider ratio)
 
 TERMINAL_CONFIG = TerminalConfiguration.DIFF   # NI-9320 is differential-input

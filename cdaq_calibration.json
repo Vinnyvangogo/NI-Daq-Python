@@ -1,5 +1,5 @@
 {
-  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-02 10:03:06",
+  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-02 11:48:06",
   "chassis_name": "cDAQ9189-24E8D67",
   "ip_address": "169.254.32.5",
   "module_config": {
@@ -9,8 +9,8 @@
       "_note": "9213 thermocouple. hw_sample_rate_hz must be >= capture_rate_hz."
     },
     "modules_2_to_6_AI_9320": {
-      "hw_sample_rate_hz": 2000,
-      "capture_rate_hz": 1000,
+      "hw_sample_rate_hz": 3200,
+      "capture_rate_hz": 250,
       "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth."
     },
     "module_7_AI_9223": {
@@ -138,8 +138,8 @@
       "module": 2,
       "channel": 0,
       "name": "M1ACIN_PHA_VSENSE_OUT",
-      "scale": "44.1045587896",
-      "offset": "-0.145545044006"
+      "scale": "1.0",
+      "offset": "0.0"
     },
     {
       "module": 2,
