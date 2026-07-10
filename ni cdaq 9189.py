@@ -559,13 +559,15 @@ class DAQManager:
                         time.sleep(0.2)
                         continue
 
-                cal = [raw_rms[i] * self.cal_9320[i][0] + self.cal_9320[i][1]
+                # Apply calibration then clamp to zero -- RMS is always
+                # non-negative by definition (sqrt of mean of squares).
+                # A small negative offset in the cal table can otherwise
+                # produce negative values near zero which are physically
+                # meaningless for AC voltage and current measurements.
+                cal = [max(0.0, raw_rms[i] * self.cal_9320[i][0] + self.cal_9320[i][1])
                        if self.ai9320_enabled[i] else self.ai9320_data[i]
                        for i in range(AI_9320_TOTAL)]
                 self.ai9320_data = cal
-
-                if self.logging:
-                    self.log_queue.put(("AI9320", datetime.now(), list(cal)))
 
                 elapsed = time.perf_counter() - t0
                 time.sleep(max(0.0, interval - elapsed))
