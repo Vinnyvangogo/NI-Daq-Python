@@ -17,3 +17,7 @@ Notes:
     any module can be started. Any communication failure is surfaced in the
     status bar at the bottom of the window (does not raise a popup so it
     cannot interrupt continuous acquisition).
+
+JSON file for:
+    cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset.
+    enabling channels with names cal info per channel
