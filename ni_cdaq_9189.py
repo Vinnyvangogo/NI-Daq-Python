@@ -427,8 +427,20 @@ class DAQManager:
                         result = task.read(
                             number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
                             timeout=2.0)
+                        # READ_ALL_AVAILABLE can legitimately return zero
+                        # samples for a channel if this loop tick lands
+                        # before the hardware has produced any new data
+                        # since the last read (more likely the higher the
+                        # display/capture rate is set relative to what the
+                        # chassis can sustain). np.nanmean() of an empty
+                        # array raises a RuntimeWarning and returns NaN,
+                        # which then shows as "nan" in the GUI and as a
+                        # blank cell in the CSV. Hold the previous value
+                        # for that channel instead of writing NaN.
                         raw = [float(np.nanmean(np.atleast_1d(ch_data)))
-                               for ch_data in result]
+                               if np.atleast_1d(ch_data).size > 0
+                               else self.tc_data[i]
+                               for i, ch_data in enumerate(result)]
                     except Exception as e:
                         self.report_error("Module 1 (9213)", str(e))
                         # Same read-position recovery as 9320/9223:
@@ -562,10 +574,28 @@ class DAQManager:
                         # scale+offset calibration to that value.
                         #   RMS mode: rms_cal = sqrt(mean(x^2)) * scale + offset
                         #   Raw mode: raw_cal = mean(x)          * scale + offset
+                        #
+                        # READ_ALL_AVAILABLE can legitimately return zero
+                        # samples for a channel if this tick lands before
+                        # the hardware has produced any new data since the
+                        # last read -- this gets MORE likely, not less, the
+                        # higher capture_rate_hz/csv_capture_rate_hz are set
+                        # relative to what the chassis can actually sustain
+                        # (e.g. hw_sample_rate_hz=20000 with capture/csv
+                        # rates of 1000 polls every 1 ms, far faster than
+                        # this networked chassis can reliably keep fed).
+                        # np.nanmean()/sqrt(nanmean()) of an empty array
+                        # raises a RuntimeWarning and returns NaN, which
+                        # then shows as "nan" in the GUI and a blank CSV
+                        # cell. raw_meas[i] is left as None for an empty
+                        # block so the calibration step below can hold the
+                        # previous value for that channel instead.
                         raw_meas = []
                         for i, ch_data in enumerate(data):
                             ch_arr = np.atleast_1d(ch_data)
-                            if self.ai9320_rms_enabled[i]:
+                            if ch_arr.size == 0:
+                                raw_meas.append(None)
+                            elif self.ai9320_rms_enabled[i]:
                                 raw_meas.append(float(np.sqrt(np.nanmean(ch_arr**2))))
                             else:
                                 raw_meas.append(float(np.nanmean(ch_arr)))
@@ -590,7 +620,7 @@ class DAQManager:
                 # voltage can legitimately be negative.
                 cal = []
                 for i in range(AI_9320_TOTAL):
-                    if not self.ai9320_enabled[i]:
+                    if not self.ai9320_enabled[i] or raw_meas[i] is None:
                         cal.append(self.ai9320_data[i])
                         continue
                     v = raw_meas[i] * self.cal_9320[i][0] + self.cal_9320[i][1]
@@ -676,7 +706,13 @@ class DAQManager:
                         data = task.read(
                             number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
                             timeout=1.0)
+                        # See the 9320 loop for why an empty per-channel
+                        # block can occur. raw[i] is left as None so the
+                        # calibration step below can hold the previous
+                        # *calibrated* value for that channel directly,
+                        # rather than re-applying scale+offset to it.
                         raw = [float(np.nanmean(np.atleast_1d(ch_data)))
+                               if np.atleast_1d(ch_data).size > 0 else None
                                for ch_data in data]
                     except Exception as e:
                         self.report_error("Module 7 (9223)", str(e))
@@ -695,8 +731,9 @@ class DAQManager:
                         time.sleep(0.1)
                         continue
 
-                cal = [raw[i] * self.cal_9223[i][0] + self.cal_9223[i][1]
-                       if self.ai9223_enabled[i] else self.ai9223_data[i]
+                cal = [(raw[i] * self.cal_9223[i][0] + self.cal_9223[i][1])
+                       if (self.ai9223_enabled[i] and raw[i] is not None)
+                       else self.ai9223_data[i]
                        for i in range(AI_9223_TOTAL)]
                 self.ai9223_data = cal
 
