@@ -508,15 +508,21 @@ class DAQManager:
         acq_rate    = max(self.ai9320_hw_rate, target_rate)
         avg_factor  = max(1, acq_rate // max(1, target_rate))
 
-        # CSV capture rate -- each loop tick produces one CSV row.
-        # Must be <= acq_rate. The GUI (see _poll_ai9320 in DAQApp)
-        # refreshes independently at gui_display_rate_hz from the JSON
-        # (1 Hz to hw_sample_rate_hz); we just update self.ai9320_data
-        # every tick and let the GUI read whatever's freshest.
-        csv_rate    = max(1, min(self.ai9320_csv_rate, acq_rate))
-        block_ms    = 1000.0 / csv_rate
-        interval    = block_ms / 1000.0
-        n_samples   = max(avg_factor, int(acq_rate * interval))
+        # n_samples is the raw-sample averaging window capture_rate_hz is
+        # actually meant to control: acq_rate raw samples/sec, averaged
+        # avg_factor-at-a-time, yields target_rate (capture_rate_hz)
+        # captured values/sec. Requesting exactly avg_factor samples per
+        # channel on every read ties the averaging window to
+        # capture_rate_hz for real -- task.read() blocks until they've
+        # arrived, so this loop naturally ticks at target_rate.
+        #
+        # This is intentionally independent of csv_capture_rate_hz and
+        # gui_display_rate_hz. Those don't drive this loop at all --
+        # _csv_writer_loop and _poll_ai9320 each read whatever's freshest
+        # in self.ai9320_data on their own separate schedules, so this
+        # acquisition loop is free to tick purely at capture_rate_hz.
+        n_samples = avg_factor
+        interval  = n_samples / acq_rate   # == 1 / target_rate seconds
 
         task = None
         if not SIMULATION_MODE:
@@ -568,7 +574,7 @@ class DAQManager:
                 else:
                     try:
                         data = task.read(
-                            number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,
+                            number_of_samples_per_channel=n_samples,
                             timeout=2.0)
                         # Per channel, compute either true RMS or a plain
                         # averaged (DC) value over the block of raw samples,
@@ -577,21 +583,20 @@ class DAQManager:
                         #   RMS mode: rms_cal = sqrt(mean(x^2)) * scale + offset
                         #   Raw mode: raw_cal = mean(x)          * scale + offset
                         #
-                        # READ_ALL_AVAILABLE can legitimately return zero
-                        # samples for a channel if this tick lands before
-                        # the hardware has produced any new data since the
-                        # last read -- this gets MORE likely, not less, the
-                        # higher capture_rate_hz/csv_capture_rate_hz are set
-                        # relative to what the chassis can actually sustain
-                        # (e.g. hw_sample_rate_hz=20000 with capture/csv
-                        # rates of 1000 polls every 1 ms, far faster than
-                        # this networked chassis can reliably keep fed).
-                        # np.nanmean()/sqrt(nanmean()) of an empty array
-                        # raises a RuntimeWarning and returns NaN, which
-                        # then shows as "nan" in the GUI and a blank CSV
-                        # cell. raw_meas[i] is left as None for an empty
-                        # block so the calibration step below can hold the
-                        # previous value for that channel instead.
+                        # Requesting a fixed n_samples per channel means
+                        # task.read() itself blocks until exactly that many
+                        # raw samples/channel are ready, so every reading
+                        # is a true avg_factor-sample average as
+                        # capture_rate_hz intends -- no more averaging over
+                        # whatever happened to arrive in an arbitrary
+                        # window. An empty/short channel here would only
+                        # happen after an error-recovery stream reset
+                        # below; np.nanmean()/sqrt(nanmean()) of an empty
+                        # array raises a RuntimeWarning and returns NaN,
+                        # which then shows as "nan" in the GUI and a blank
+                        # CSV cell, so raw_meas[i] is left as None for an
+                        # empty block and the calibration step below holds
+                        # the previous value for that channel instead.
                         raw_meas = []
                         for i, ch_data in enumerate(data):
                             ch_arr = np.atleast_1d(ch_data)
