@@ -1,5 +1,5 @@
 {
-  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them. Saved: 2026-07-02 17:21:55",
+  "_info": "cDAQ-9189 calibration file. Applied as: output = (raw * scale) + offset. Edit scale and offset values here, then restart the script or click Apply All on the Calibration tab to load them rms_enabled (per NI_9320 channel): true = report True RMS (sqrt-mean-square) of the block, matching prior behavior; false = report the plain averaged (DC) voltage of the block instead, useful for spare/DC channels where rectified RMS doesn't make sense. Saved: 2026-07-28 00:00:00",
   "chassis_name": "cDAQ9189-24E8D67",
   "ip_address": "169.254.32.5",
   "auto_start_on_connect": true,
@@ -21,7 +21,8 @@
       "hw_sample_rate_hz": 3200,
       "capture_rate_hz": 250,
       "csv_capture_rate_hz": 250,
-      "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth. csv_capture_rate_hz controls CSV rows/sec (must be <= hw_sample_rate_hz)."
+      "gui_display_rate_hz": 20,
+      "_note": "9320 analog input. hw_rate limited by networked chassis bandwidth. csv_capture_rate_hz controls CSV rows/sec (must be <= hw_sample_rate_hz). gui_display_rate_hz controls how often the on-screen readouts for modules 2-6 repaint, independent of csv_capture_rate_hz -- set as low as 1 (1 update/sec) or as high as hw_sample_rate_hz; values outside that range are clamped automatically."
     },
     "module_7_AI_9223": {
       "hw_sample_rate_hz": 20000,
@@ -165,6 +166,7 @@
       "channel": 0,
       "name": "M1ACIN_PHA_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "44.1045587896",
       "offset": "-0.145545044006"
     },
@@ -173,6 +175,7 @@
       "channel": 1,
       "name": "M1ACIN_PHB_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "44.1934205311",
       "offset": "-0.106064209275"
     },
@@ -181,6 +184,7 @@
       "channel": 2,
       "name": "M1ACIN_PHC_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "44.3726906561",
       "offset": "-0.128680802903"
     },
@@ -189,6 +193,7 @@
       "channel": 3,
       "name": "EPDU_PHA_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.8915703603",
       "offset": "-0.193431339225"
     },
@@ -197,6 +202,7 @@
       "channel": 4,
       "name": "EPDU_PHB_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.8080499299",
       "offset": "-0.266997834671"
     },
@@ -205,6 +211,7 @@
       "channel": 5,
       "name": "EPDU_PHC_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.8167352654",
       "offset": "-0.187495226376"
     },
@@ -213,6 +220,7 @@
       "channel": 6,
       "name": "M2ACIN_PHA_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "44.2885041872",
       "offset": "-0.261302174705"
     },
@@ -221,6 +229,7 @@
       "channel": 7,
       "name": "M2ACIN_PHB_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "44.2548124628",
       "offset": "-0.203572137329"
     },
@@ -229,6 +238,7 @@
       "channel": 8,
       "name": "M2ACIN_PHC_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "44.269454738",
       "offset": "-0.159370037057"
     },
@@ -237,6 +247,7 @@
       "channel": 9,
       "name": "LAA_PHA_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.7285677945",
       "offset": "-0.136148562707"
     },
@@ -245,6 +256,7 @@
       "channel": 10,
       "name": "LAA_PHB_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.529637923",
       "offset": "-0.175241877561"
     },
@@ -253,6 +265,7 @@
       "channel": 11,
       "name": "LAA_PHC_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.9126486763",
       "offset": "-0.244724389308"
     },
@@ -261,6 +274,7 @@
       "channel": 12,
       "name": "LOA_PHA_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.7743030509",
       "offset": "-0.187355200068"
     },
@@ -269,6 +283,7 @@
       "channel": 13,
       "name": "LOA_PHB_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.7270567271",
       "offset": "-0.175853875854"
     },
@@ -277,6 +292,7 @@
       "channel": 14,
       "name": "LOA_PHC_VSENSE_OUT",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "56.9119523607",
       "offset": "-0.284559761803"
     },
@@ -285,6 +301,7 @@
       "channel": 15,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -293,6 +310,7 @@
       "channel": 0,
       "name": "M1ACIN_PHA_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "2.13392514191",
       "offset": "-0.00149374759933"
     },
@@ -301,6 +319,7 @@
       "channel": 1,
       "name": "M1ACIN_PHB_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "2.13095424131",
       "offset": "-0.00191785881718"
     },
@@ -309,6 +328,7 @@
       "channel": 2,
       "name": "M1ACIN_PHC_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "2.13690433792",
       "offset": "-0.00106845216896"
     },
@@ -317,6 +337,7 @@
       "channel": 3,
       "name": "EPDU_PHA_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "4.28602043003",
       "offset": "-0.00214301021502"
     },
@@ -325,6 +346,7 @@
       "channel": 4,
       "name": "EPDU_PHB_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "4.27990584207",
       "offset": "-0.00213995292104"
     },
@@ -333,6 +355,7 @@
       "channel": 5,
       "name": "EPDU_PHC_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "4.27990584207",
       "offset": "-0.00213995292104"
     },
@@ -341,6 +364,7 @@
       "channel": 6,
       "name": "M2ACIN_PHA_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.26722062311",
       "offset": "-0.00139394268542"
     },
@@ -349,6 +373,7 @@
       "channel": 7,
       "name": "M2ACIN_PHB_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.26653277606",
       "offset": "-0.00139318605366"
     },
@@ -357,6 +382,7 @@
       "channel": 8,
       "name": "M2ACIN_PHC_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.2525274214",
       "offset": "-0.00162828564783"
     },
@@ -365,6 +391,7 @@
       "channel": 9,
       "name": "LAA_PHA_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.2679092177",
       "offset": "-0.00101432737416"
     },
@@ -373,6 +400,7 @@
       "channel": 10,
       "name": "LAA_PHB_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.27383125982",
       "offset": "-0.00101906500786"
     },
@@ -381,6 +409,7 @@
       "channel": 11,
       "name": "LAA_PHC_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.26074257738",
       "offset": "-0.00113466831964"
     },
@@ -389,6 +418,7 @@
       "channel": 12,
       "name": "LOA_PHA_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.25675505844",
       "offset": "-0.000754053035063"
     },
@@ -397,6 +427,7 @@
       "channel": 13,
       "name": "LOA_PHB_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.24968757811",
       "offset": "-0.000749812546863"
     },
@@ -405,6 +436,7 @@
       "channel": 14,
       "name": "LOA_PHC_ISENSE",
       "enabled": true,
+      "rms_enabled": true,
       "scale": "1.26087504728",
       "offset": "-0.00100870003783"
     },
@@ -413,6 +445,7 @@
       "channel": 15,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -421,6 +454,7 @@
       "channel": 0,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -429,6 +463,7 @@
       "channel": 1,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -437,6 +472,7 @@
       "channel": 2,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -445,6 +481,7 @@
       "channel": 3,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -453,6 +490,7 @@
       "channel": 4,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -461,6 +499,7 @@
       "channel": 5,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -469,6 +508,7 @@
       "channel": 6,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -477,6 +517,7 @@
       "channel": 7,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -485,6 +526,7 @@
       "channel": 8,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -493,6 +535,7 @@
       "channel": 9,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -501,6 +544,7 @@
       "channel": 10,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -509,6 +553,7 @@
       "channel": 11,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -517,6 +562,7 @@
       "channel": 12,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -525,6 +571,7 @@
       "channel": 13,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -533,6 +580,7 @@
       "channel": 14,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -541,6 +589,7 @@
       "channel": 15,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -549,6 +598,7 @@
       "channel": 0,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -557,6 +607,7 @@
       "channel": 1,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -565,6 +616,7 @@
       "channel": 2,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -573,6 +625,7 @@
       "channel": 3,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -581,6 +634,7 @@
       "channel": 4,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -589,6 +643,7 @@
       "channel": 5,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -597,6 +652,7 @@
       "channel": 6,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -605,6 +661,7 @@
       "channel": 7,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -613,6 +670,7 @@
       "channel": 8,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -621,6 +679,7 @@
       "channel": 9,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -629,6 +688,7 @@
       "channel": 10,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -637,6 +697,7 @@
       "channel": 11,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -645,6 +706,7 @@
       "channel": 12,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -653,6 +715,7 @@
       "channel": 13,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -661,6 +724,7 @@
       "channel": 14,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -669,6 +733,7 @@
       "channel": 15,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -677,6 +742,7 @@
       "channel": 0,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -685,6 +751,7 @@
       "channel": 1,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -693,6 +760,7 @@
       "channel": 2,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -701,6 +769,7 @@
       "channel": 3,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -709,6 +778,7 @@
       "channel": 4,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -717,6 +787,7 @@
       "channel": 5,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -725,6 +796,7 @@
       "channel": 6,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -733,6 +805,7 @@
       "channel": 7,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -741,6 +814,7 @@
       "channel": 8,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -749,6 +823,7 @@
       "channel": 9,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -757,6 +832,7 @@
       "channel": 10,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -765,6 +841,7 @@
       "channel": 11,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -773,6 +850,7 @@
       "channel": 12,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -781,6 +859,7 @@
       "channel": 13,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -789,6 +868,7 @@
       "channel": 14,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     },
@@ -797,6 +877,7 @@
       "channel": 15,
       "name": "SPARE",
       "enabled": false,
+      "rms_enabled": true,
       "scale": "1.0",
       "offset": "0.0"
     }
